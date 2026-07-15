@@ -38,16 +38,11 @@ export interface Dev {
     badge?: boolean;
 }
 
-export const Devs = /* #__PURE__*/ new Proxy({
+export const Devs = /* #__PURE__*/ Object.freeze({
     ewlle: { name: "ewlle", id: 892408159526858753n },
     rootpoi: { name: "rootpoi", id: 1505905479413530795n },
     kraethis: { name: "kraethis", id: 904384828143706164n }
-} as any, {
-    get: (target, prop) => {
-        if (typeof prop === "string" && prop in target) return target[prop];
-        return { name: String(prop), id: 0n };
-    }
-}) as any;
+} satisfies Record<string, Dev>);
 
 export const DevsById = /* #__PURE__*/ (() =>
     Object.freeze(Object.fromEntries(

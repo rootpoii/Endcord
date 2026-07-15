@@ -123,8 +123,15 @@ async function parseFile(fileName: string) {
             switch (key) {
                 case "name":
                 case "description":
-                    if (!isStringLiteral(value)) throw fail(`${key} is not a string literal`);
-                    data[key] = value.text;
+                    let text = "";
+                    if (isStringLiteral(value)) {
+                        text = value.text;
+                    } else if (isCallExpression(value) && isIdentifier(value.expression) && value.expression.text === "t" && isStringLiteral(value.arguments[0])) {
+                        text = (value.arguments[0] as StringLiteral).text;
+                    } else {
+                        throw fail(`${key} is not a string literal or t() call`);
+                    }
+                    data[key] = text;
                     break;
                 case "patches":
                     data.hasPatches = true;
@@ -136,8 +143,12 @@ async function parseFile(fileName: string) {
                     if (!isArrayLiteralExpression(value)) throw fail("authors is not an array literal");
                     data.authors = value.elements.map(e => {
                         if (!isPropertyAccessExpression(e)) throw fail("authors array contains non-property access expressions");
-                        const d = devs[getName(e)!];
-                        if (!d) throw fail(`couldn't look up author ${getName(e)}`);
+                        const name = getName(e)!;
+                        let d = devs[name];
+                        if (!d) {
+                            d = { name, id: "0" };
+                            devs[name] = d;
+                        }
                         return d;
                     });
                     break;
