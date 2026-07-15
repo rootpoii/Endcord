@@ -14,7 +14,7 @@ Enhance your Discord experience with powerful plugins, themes, and privacy-focus
 
 ---
 
-## ✨ Features
+##  Features
 
 * 🚀 Easy installation
 * 🧩 **200+ built-in plugins**
