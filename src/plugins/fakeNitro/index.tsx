@@ -439,7 +439,7 @@ export default definePlugin({
     getRealPremiumType(): number {
         const user = UserStore?.getCurrentUser();
         if (!user) return 0;
-        return user._realPremiumType ?? user.premiumType ?? 0;
+        return (user as any)._realPremiumType ?? user.premiumType ?? 0;
     },
 
     get canUseEmotes() {

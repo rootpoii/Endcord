@@ -1773,8 +1773,8 @@ export default definePlugin({
                                         Object.defineProperty(xhr, "readyState", { get: () => 4, configurable: true });
                                         Object.defineProperty(xhr, "responseText", { get: () => JSON.stringify({}), configurable: true });
                                         Object.defineProperty(xhr, "response", { get: () => JSON.stringify({}), configurable: true });
-                                        if (typeof xhr.onreadystatechange === "function") xhr.onreadystatechange();
-                                        if (typeof xhr.onload === "function") xhr.onload();
+                                        if (typeof xhr.onreadystatechange === "function") (xhr.onreadystatechange as any)();
+                                        if (typeof xhr.onload === "function") (xhr.onload as any)();
                                     } catch {}
                                 }, 20);
                                 return;
@@ -1894,7 +1894,7 @@ export default definePlugin({
                     const orig = origGet(id);
                     if (!orig) return orig;
                     const myId = AuthenticationStore?.getId?.();
-                    const isMe = myId && id === myId;
+                    const isMe = !!(myId && id === myId);
                     const pd = getProfileDataFor(id);
                     return (pd || isMe) ? this.fakeCurrentUser(orig, isMe) : orig;
                 };
