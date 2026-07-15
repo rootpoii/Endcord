@@ -5,9 +5,9 @@
  */
 
 import { Link } from "@components/Link";
+import { RenderModalProps } from "@endcord/discord-types";
 import { settings } from "@plugins/decor/settings";
 import { DecorationModalClasses, requireAvatarDecorationModal } from "@plugins/decor/ui";
-import { RenderModalProps } from "@endcord/discord-types";
 import { ConfirmModal, Forms, openModal } from "@webpack/common";
 
 import { openCreateDecorationModal } from "./CreateDecorationModal";

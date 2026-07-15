@@ -8,15 +8,15 @@ import { Button } from "@components/Button";
 import { Heading } from "@components/Heading";
 import { SettingsTab, wrapTab } from "@components/settings";
 import { TooltipContainer } from "@components/TooltipContainer";
+import { Icon } from "@endcord/discord-types";
 import { iconsModule } from "@endcordplugins/_core/concatenatedModules";
+import { IconsDef } from "@plugins/iconViewer/types";
 import { debounce } from "@shared/debounce";
 import { Margins } from "@utils/margins";
 import { classes } from "@utils/misc";
 import { useIntersection } from "@utils/react";
-import { Icon } from "@endcord/discord-types";
 import { Clickable, TextInput, useCallback, useEffect, useMemo, useState } from "@webpack/common";
 
-import { IconsDef } from "../types";
 import { openIconModal } from "./Modals";
 
 let cachedIcons: IconsDef | null = null;

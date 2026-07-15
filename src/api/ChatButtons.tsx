@@ -7,10 +7,10 @@
 import "./ChatButton.css";
 
 import ErrorBoundary from "@components/ErrorBoundary";
+import { Channel } from "@endcord/discord-types";
 import { Logger } from "@utils/Logger";
 import { classes } from "@utils/misc";
 import { IconComponent } from "@utils/types";
-import { Channel } from "@endcord/discord-types";
 import { findCssClassesLazy } from "@webpack";
 import { Clickable, Menu, Tooltip } from "@webpack/common";
 import { HTMLProps, JSX, MouseEventHandler, ReactNode } from "react";

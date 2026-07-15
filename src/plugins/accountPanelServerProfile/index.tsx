@@ -6,10 +6,10 @@
 
 import { definePluginSettings } from "@api/Settings";
 import ErrorBoundary from "@components/ErrorBoundary";
+import { User } from "@endcord/discord-types";
 import { Devs } from "@utils/constants";
 import { getCurrentChannel } from "@utils/discord";
 import definePlugin, { OptionType } from "@utils/types";
-import { User } from "@endcord/discord-types";
 import { findComponentByCodeLazy } from "@webpack";
 import { ContextMenuApi, Menu } from "@webpack/common";
 

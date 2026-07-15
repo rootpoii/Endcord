@@ -5,10 +5,10 @@
  */
 
 import { definePluginSettings } from "@api/Settings";
+import type { Channel, Embed, GuildMember, MessageAttachment, User } from "@endcord/discord-types";
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import definePlugin, { makeRange, OptionType, PluginNative, ReporterTestable } from "@utils/types";
-import type { Channel, Embed, GuildMember, MessageAttachment, User } from "@endcord/discord-types";
 import { findByCodeLazy, findLazy } from "@webpack";
 import { Button, ChannelStore, GuildRoleStore, GuildStore, UserStore } from "@webpack/common";
 

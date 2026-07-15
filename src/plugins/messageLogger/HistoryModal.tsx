@@ -6,10 +6,10 @@
 
 import ErrorBoundary from "@components/ErrorBoundary";
 import { TooltipContainer } from "@components/TooltipContainer";
+import { RenderModalProps } from "@endcord/discord-types";
 import { classNameFactory } from "@utils/css";
 import { Margins } from "@utils/margins";
 import { classes } from "@utils/misc";
-import { RenderModalProps } from "@endcord/discord-types";
 import { findCssClassesLazy } from "@webpack";
 import { Modal,openModal, TabBar, Timestamp, useState } from "@webpack/common";
 

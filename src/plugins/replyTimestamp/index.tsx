@@ -7,9 +7,9 @@
 import "./style.css";
 
 import ErrorBoundary from "@components/ErrorBoundary";
+import type { Message } from "@endcord/discord-types";
 import { Devs } from "@utils/constants";
 import definePlugin from "@utils/types";
-import type { Message } from "@endcord/discord-types";
 import { findCssClassesLazy } from "@webpack";
 import { DateUtils, Timestamp } from "@webpack/common";
 import type { HTMLAttributes } from "react";

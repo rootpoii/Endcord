@@ -10,6 +10,7 @@ import { BadgePosition, ProfileBadge } from "@api/Badges";
 import { addContextMenuPatch, NavContextMenuPatchCallback, removeContextMenuPatch } from "@api/ContextMenu";
 import { addHeaderBarButton, HeaderBarButton, removeHeaderBarButton } from "@api/HeaderBar";
 import { DataStore } from "@api/index";
+import { EndcordDevs } from "@utils/constants";
 import {
     ModalCloseButton as ModalCloseButton_,
     ModalContent as ModalContent_,
@@ -19,8 +20,7 @@ import {
     openModal
 } from "@utils/modal";
 import definePlugin from "@utils/types";
-import { EndcordDevs } from "@utils/constants";
-import { AuthenticationStore, Button, FluxDispatcher, IconUtils, Menu, React, Select, SnowflakeUtils, UserStore } from "@webpack/common";
+import { AuthenticationStore, Button, FluxDispatcher, IconUtils, Menu, React, RestAPI, Select, SnowflakeUtils, UserStore } from "@webpack/common";
 import virtualMerge from "virtual-merge";
 
 const t = (s: string) => s;
@@ -226,7 +226,7 @@ let domObserver: MutationObserver | null = null;
 
 let cachedOriginalUser: any = null;
 let cachedFakeUser: any = null;
-let cachedDataHash: number = 0;
+const cachedDataHash: number = 0;
 let _trueOriginalUser: any = null;
 let _dataVersion: number = 0;
 let allAccountsData: Record<string, CustomProfileData> = {};
@@ -1477,10 +1477,10 @@ export default definePlugin({
         return userId === this._copiedUserId;
     },
 
-    fakeCurrentUser(user: any) {
+    fakeCurrentUser(user: any, forceMe?: boolean) {
         if (!user) return user;
         const myId = AuthenticationStore?.getId?.();
-        const isMe = myId && user.id === myId;
+        const isMe = forceMe ?? (myId && user.id === myId);
         const pd = getProfileDataFor(user.id);
         if (!pd && !isMe) return user;
 
@@ -1769,10 +1769,10 @@ export default definePlugin({
                                 const xhr = this;
                                 setTimeout(() => {
                                     try {
-                                        Object.defineProperty(xhr, 'status', { get: () => 200, configurable: true });
-                                        Object.defineProperty(xhr, 'readyState', { get: () => 4, configurable: true });
-                                        Object.defineProperty(xhr, 'responseText', { get: () => JSON.stringify({}), configurable: true });
-                                        Object.defineProperty(xhr, 'response', { get: () => JSON.stringify({}), configurable: true });
+                                        Object.defineProperty(xhr, "status", { get: () => 200, configurable: true });
+                                        Object.defineProperty(xhr, "readyState", { get: () => 4, configurable: true });
+                                        Object.defineProperty(xhr, "responseText", { get: () => JSON.stringify({}), configurable: true });
+                                        Object.defineProperty(xhr, "response", { get: () => JSON.stringify({}), configurable: true });
                                         if (typeof xhr.onreadystatechange === "function") xhr.onreadystatechange();
                                         if (typeof xhr.onload === "function") xhr.onload();
                                     } catch {}

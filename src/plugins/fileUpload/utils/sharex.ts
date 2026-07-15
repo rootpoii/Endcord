@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { ShareXUploaderConfig } from "../types";
+import { ShareXUploaderConfig } from "@plugins\fileUpload\types";
 
 const JSON_TEMPLATE_REGEX = /\$json:([^$]+)\$|\{json:([^}]+)\}/g;
 const RESPONSE_TEMPLATE_REGEX = /\$response\$|\{response\}/g;

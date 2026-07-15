@@ -6,10 +6,10 @@
 
 import { definePluginSettings } from "@api/Settings";
 import { Paragraph } from "@components/Paragraph";
-import { Devs, IS_MAC } from "@utils/constants";
-import definePlugin, { OptionType, PluginNative, ReporterTestable } from "@utils/types";
 import { Activity, ActivityAssets, ActivityButton } from "@endcord/discord-types";
 import { ActivityFlags, ActivityStatusDisplayType, ActivityType } from "@endcord/discord-types/enums";
+import { Devs, IS_MAC } from "@utils/constants";
+import definePlugin, { OptionType, PluginNative, ReporterTestable } from "@utils/types";
 import { ApplicationAssetUtils, FluxDispatcher } from "@webpack/common";
 
 const Native = EndcordNative.pluginHelpers.AppleMusicRichPresence as PluginNative<typeof import("./native")>;

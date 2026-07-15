@@ -7,6 +7,7 @@
 import "./styles.css";
 
 export * from "./BaseTab";
+export { default as EndcordTab } from "./endcord";
 export { default as PatchHelperTab } from "./patchHelper";
 export { default as PluginsTab } from "./plugins";
 export { openContributorModal } from "./plugins/ContributorModal";
@@ -15,4 +16,3 @@ export { default as BackupAndRestoreTab } from "./sync/BackupAndRestoreTab";
 export { default as CloudTab } from "./sync/CloudTab";
 export { default as ThemesTab } from "./themes";
 export { default as UpdaterTab } from "./updater";
-export { default as EndcordTab } from "./endcord";

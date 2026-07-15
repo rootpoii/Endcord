@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { Message } from "@endcord/discord-types";
 import { languages } from "@endcordplugins/translatePlus/misc/languages";
 import { cl, Translation } from "@endcordplugins/translatePlus/misc/types";
-import { Message } from "@endcord/discord-types";
 import { Parser, useEffect, useState } from "@webpack/common";
 
 import { SmallIcon } from "./icon";

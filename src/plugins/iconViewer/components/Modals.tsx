@@ -10,10 +10,10 @@ import { Flex } from "@components/Flex";
 import { HeadingSecondary } from "@components/Heading";
 import { Paragraph } from "@components/Paragraph";
 import { TooltipContainer } from "@components/TooltipContainer";
+import { Icon, RenderModalProps } from "@endcord/discord-types";
 import { copyWithToast, getIntlMessage } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import { saveFile } from "@utils/web";
-import { Icon, RenderModalProps } from "@endcord/discord-types";
 import { findComponentByCodeLazy } from "@webpack";
 import {
     Clickable,
@@ -30,7 +30,7 @@ import {
     useState
 } from "@webpack/common";
 
-import { cssColors, getCssColorKeys, iconSizes, iconSizesInPx } from "../utils";
+import { cssColors, getCssColorKeys, iconSizes, iconSizesInPx } from "@plugins/iconViewer/utils";
 
 const logger = new Logger("IconViewer");
 const BugIcon = findComponentByCodeLazy("1.1.27.1.37 0a6.66 6.6");

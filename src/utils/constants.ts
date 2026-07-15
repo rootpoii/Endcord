@@ -1,19 +1,7 @@
 /*
- * Endcord, a modification for Discord's desktop app
- * Copyright (c) 2022 Vendicated and contributors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Endcord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 export const REACT_GLOBAL = "Endcord.Webpack.Common.React";
@@ -38,25 +26,37 @@ export interface Dev {
     badge?: boolean;
 }
 
-export const Devs = /* #__PURE__*/ Object.freeze({
+export const Devs: Record<string, Dev> & {
+    ewlle: Dev;
+    rootpoi: Dev;
+    kraethis: Dev;
+} = new Proxy({
     ewlle: { name: "ewlle", id: 892408159526858753n },
     rootpoi: { name: "rootpoi", id: 1505905479413530795n },
     kraethis: { name: "kraethis", id: 904384828143706164n }
-} satisfies Record<string, Dev>);
+} as any, {
+    get: (target, prop) => {
+        if (typeof prop === "string" && prop in target) {
+            return target[prop];
+        }
+        return {
+            name: typeof prop === "string" ? prop : String(prop),
+            id: 0n
+        };
+    }
+}) as any;
 
 export const DevsById = /* #__PURE__*/ (() =>
     Object.freeze(Object.fromEntries(
-        Object.entries(Devs)
+        Object.entries({
+            ewlle: { name: "ewlle", id: 892408159526858753n },
+            rootpoi: { name: "rootpoi", id: 1505905479413530795n },
+            kraethis: { name: "kraethis", id: 904384828143706164n }
+        })
             .filter(d => d[1].id !== 0n)
             .map(([_, v]) => [v.id, v] as const)
     ))
 )() as Record<string, Dev>;
 
-export const EndcordDevs = new Proxy({} as Record<string, Dev>, {
-    get: (target, prop) => {
-        return {
-            name: String(prop),
-            id: 0n
-        };
-    }
-}) as any;
+export const EndcordDevs = Devs;
+

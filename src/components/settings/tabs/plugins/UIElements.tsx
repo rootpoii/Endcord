@@ -14,11 +14,11 @@ import { Card } from "@components/Card";
 import { PlaceholderIcon } from "@components/Icons";
 import { Paragraph } from "@components/Paragraph";
 import { Switch } from "@components/Switch";
+import { RenderModalProps } from "@endcord/discord-types";
 import { classNameFactory } from "@utils/css";
 import { Margins } from "@utils/margins";
 import { classes } from "@utils/misc";
 import { IconComponent } from "@utils/types";
-import { RenderModalProps } from "@endcord/discord-types";
 import { Clickable, Modal,openModal } from "@webpack/common";
 
 
