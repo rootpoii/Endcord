@@ -1,0 +1,156 @@
+.vc-file-upload-progress-wrap {
+    margin-top: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle);
+    padding: 8px 10px;
+    background: var(--background-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.vc-file-upload-progress-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.vc-file-upload-progress-label {
+    font-size: 12px;
+    color: var(--text-default);
+}
+
+.vc-file-upload-progress-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vc-file-upload-progress-attempt {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.vc-file-upload-progress-percent {
+    font-size: 12px;
+    color: var(--text-default);
+    white-space: nowrap;
+}
+
+.vc-file-upload-progress-cancel {
+    border: none;
+    border-radius: 6px;
+    background: var(--button-danger-background);
+    color: var(--white-500);
+    font-size: 11px;
+    padding: 3px 8px;
+    cursor: pointer;
+}
+
+.vc-file-upload-progress-track {
+    width: 100%;
+    height: 6px;
+    background: var(--background-tertiary);
+    border-radius: 999px;
+}
+
+.vc-file-upload-progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--brand-500);
+    transition: width 200ms ease;
+}
+
+.vc-file-upload-progress-file {
+    font-size: 11px;
+    color: var(--text-default);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-file-upload-progress-wrap[data-phase="failed"] .vc-file-upload-progress-fill {
+    background: var(--status-danger);
+}
+
+.vc-file-upload-progress-wrap[data-phase="success"] .vc-file-upload-progress-fill {
+    background: var(--status-positive);
+}
+
+.vc-file-upload-settings-fallback-order-list {
+    display: grid;
+    gap: 6px;
+}
+
+.vc-file-upload-settings-fallback-order-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle);
+    background: var(--background-secondary);
+    color: var(--text-default);
+    cursor: grab;
+}
+
+.vc-file-upload-settings-fallback-order-item[data-dragging="true"] {
+    background: var(--background-modifier-hover);
+}
+
+.vc-file-upload-settings-fallback-order-label {
+    color: var(--text-default);
+}
+
+.vc-file-upload-settings-fallback-order-handle {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.vc-file-upload-settings-fallback-order-actions {
+    margin-top: 8px;
+}
+
+.vc-file-upload-settings-group {
+    display: grid;
+    gap: 10px;
+}
+
+.vc-file-upload-settings-service-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+}
+
+.vc-file-upload-settings-service-option {
+    min-height: 38px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    background: var(--background-secondary);
+    color: var(--text-default);
+    cursor: pointer;
+    padding: 8px 10px;
+    text-align: left;
+}
+
+.vc-file-upload-settings-service-option:hover {
+    background: var(--background-modifier-hover);
+}
+
+.vc-file-upload-settings-service-option[data-selected="true"] {
+    border-color: var(--brand-500);
+    background: var(--background-modifier-selected);
+}
+
+.vc-file-upload-settings-service-option-label {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.vc-file-upload-settings-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
