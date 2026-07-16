@@ -1,6 +1,6 @@
 <div align="center">
 
-# EndCord
+# Endcord
 
 **A modern, lightweight, and customizable Discord client.**
 
