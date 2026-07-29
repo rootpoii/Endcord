@@ -16,28 +16,28 @@ Enhance your Discord experience with powerful plugins, themes, and privacy-focus
 
 ##  Features
 
-* 🚀 Easy installation
-* 🧩 **200+ built-in plugins**
-* ⚡ Lightweight and optimized
-* 🌐 Browser support via Extension or UserScript
-* 💻 Supports every Discord branch
+*  Easy installation
+*  **230+ built-in plugins**
+*  Lightweight and optimized
+*  Browser support via Extension or UserScript
+*  Supports every Discord branch
 
   * Stable
   * Canary
   * PTB
-* 🎨 Built-in CSS editor
-* 🎭 Compatible with BetterDiscord themes
-* 🔒 Privacy-first
+*  Built-in CSS editor
+*  Compatible with BetterDiscord themes
+*  Privacy-first
 
   * Blocks Discord analytics
   * Disables crash reporting
   * No telemetry
-* 🔄 Optional settings synchronization
-* 🔧 Actively maintained with frequent updates
+*  Optional settings synchronization
+*  Actively maintained with frequent updates
 
 ---
 
-## 📦 Installation
+##  Installation
 
 1. Visit **https://endcord.com/**
 2. Download the installer for your platform.
@@ -46,13 +46,13 @@ Enhance your Discord experience with powerful plugins, themes, and privacy-focus
 
 ---
 
-## 🗑️ Uninstall
+##  Uninstall
 
 Open the installer again or follow the uninstall instructions available on the website.
 
 ---
 
-## 💬 Community
+##  Community
 
 Need help or want to report a bug?
 
