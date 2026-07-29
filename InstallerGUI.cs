@@ -11,15 +11,15 @@ using System.Threading;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Endcord Installer")]
-[assembly: AssemblyDescription("Installer, uninstaller and repair utility for Endcord.")]
+[assembly: AssemblyDescription("Native Win32 fast installer, uninstaller and repair utility for Endcord.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Endcord Inc.")]
 [assembly: AssemblyProduct("Endcord")]
 [assembly: AssemblyCopyright("Copyright © 2026 Endcord")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("4.0.0.0")]
+[assembly: AssemblyFileVersion("4.0.0.0")]
 
 namespace EndcordInstaller
 {
@@ -34,7 +34,112 @@ namespace EndcordInstaller
         }
     }
 
-    // ═══════════════════════════════ THEME SYSTEM ══════════════════════════════
+    // ═══════════════════════════════ NATIVE WIN32 KERNEL ENGINE ══════════════════════════════
+    static class Win32Kernel
+    {
+        public const uint FILE_ATTRIBUTE_NORMAL = 0x80;
+        public const uint PROCESS_TERMINATE     = 0x0001;
+        public const uint TH32CS_SNAPPROCESS    = 0x00000002;
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        public struct PROCESSENTRY32
+        {
+            public uint dwSize;
+            public uint cntUsage;
+            public uint th32ProcessID;
+            public IntPtr th32DefaultHeapID;
+            public uint dwFlags;
+            public uint cntThreads;
+            public uint th32ParentProcessID;
+            public int pcPriClassBase;
+            public uint dwFlags2;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+            public string szExeFile;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        public static extern bool DeleteFile(string lpFileName);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        public static extern bool RemoveDirectory(string lpPathName);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        public static extern bool SetFileAttributes(string lpFileName, uint dwFileAttributes);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        public static extern bool CopyFile(string lpExistingFileName, string lpNewFileName, bool bFailIfExists);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr CreateToolhelp32Snapshot(uint dwFlags, uint th32ProcessID);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        public static extern bool Process32First(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        public static extern bool Process32Next(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, uint dwProcessId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool TerminateProcess(IntPtr hProcess, uint uExitCode);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool CloseHandle(IntPtr hObject);
+
+        public static void ForceKillProcessByName(string processName)
+        {
+            IntPtr hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+            if (hSnap == IntPtr.Zero || hSnap == (IntPtr)(-1)) return;
+
+            PROCESSENTRY32 pe = new PROCESSENTRY32();
+            pe.dwSize = (uint)Marshal.SizeOf(typeof(PROCESSENTRY32));
+
+            if (Process32First(hSnap, ref pe))
+            {
+                do
+                {
+                    if (string.Equals(pe.szExeFile, processName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        IntPtr hProc = OpenProcess(PROCESS_TERMINATE, false, pe.th32ProcessID);
+                        if (hProc != IntPtr.Zero)
+                        {
+                            TerminateProcess(hProc, 0);
+                            CloseHandle(hProc);
+                        }
+                    }
+                } while (Process32Next(hSnap, ref pe));
+            }
+            CloseHandle(hSnap);
+        }
+
+        public static void DirectWin32DeleteDir(string path)
+        {
+            if (!Directory.Exists(path)) return;
+            try
+            {
+                foreach (string file in Directory.GetFiles(path, "*", SearchOption.AllDirectories))
+                {
+                    SetFileAttributes(file, FILE_ATTRIBUTE_NORMAL);
+                    DeleteFile(file);
+                }
+            }
+            catch { }
+
+            try
+            {
+                foreach (string dir in Directory.GetDirectories(path, "*", SearchOption.AllDirectories))
+                {
+                    RemoveDirectory(dir);
+                }
+            }
+            catch { }
+
+            RemoveDirectory(path);
+        }
+    }
+
+    // ═══════════════════════════════ COLOR PALETTE & DESIGN SYSTEM ══════════════════════════════
     static class C
     {
         public static readonly Color Bg          = Color.FromArgb(10, 11, 18);
@@ -44,13 +149,12 @@ namespace EndcordInstaller
         public static readonly Color CardSel     = Color.FromArgb(28, 32, 68);
         public static readonly Color Accent      = Color.FromArgb(99, 102, 241);      // Indigo Accent
         public static readonly Color AccentLight = Color.FromArgb(129, 140, 248);
-        public static readonly Color AccentGlow  = Color.FromArgb(40, 99, 102, 241);
         public static readonly Color AccentLo    = Color.FromArgb(55, 58, 140);
         public static readonly Color Green       = Color.FromArgb(16, 185, 129);      // Emerald Green
-        public static readonly Color GreenBg     = Color.FromArgb(15, 16, 185, 129);
+        public static readonly Color GreenBg     = Color.FromArgb(25, 16, 185, 129);
         public static readonly Color Red         = Color.FromArgb(239, 68, 68);
         public static readonly Color Amber       = Color.FromArgb(245, 158, 11);
-        public static readonly Color AmberBg     = Color.FromArgb(15, 245, 158, 11);
+        public static readonly Color AmberBg     = Color.FromArgb(25, 245, 158, 11);
         public static readonly Color Blue        = Color.FromArgb(59, 130, 246);
         public static readonly Color Text        = Color.FromArgb(243, 244, 246);
         public static readonly Color TextDim     = Color.FromArgb(156, 163, 175);
@@ -61,17 +165,17 @@ namespace EndcordInstaller
 
     static class F
     {
-        public static readonly Font LargeTitle = new Font("Segoe UI", 16, FontStyle.Bold);
-        public static readonly Font Title      = new Font("Segoe UI Semibold", 11, FontStyle.Bold);
-        public static readonly Font Subtitle   = new Font("Segoe UI", 9, FontStyle.Regular);
+        public static readonly Font LargeTitle = new Font("Segoe UI", 15, FontStyle.Bold);
+        public static readonly Font Title      = new Font("Segoe UI Semibold", 10.5f, FontStyle.Bold);
+        public static readonly Font Subtitle   = new Font("Segoe UI", 8.5f, FontStyle.Regular);
         public static readonly Font Code       = new Font("Consolas", 8.5f, FontStyle.Regular);
         public static readonly Font TabText    = new Font("Segoe UI Semibold", 9.5f, FontStyle.Bold);
         public static readonly Font ButtonText = new Font("Segoe UI Semibold", 10, FontStyle.Bold);
-        public static readonly Font LabelText  = new Font("Segoe UI", 9, FontStyle.Regular);
+        public static readonly Font LabelText  = new Font("Segoe UI", 8.5f, FontStyle.Regular);
         public static readonly Font MutedText  = new Font("Segoe UI", 7.5f, FontStyle.Regular);
     }
 
-    // ═══════════════════════════════ DRAWING HELPERS ═══════════════════════════════
+    // ═══════════════════════════════ GRAPHICS DRAWING HELPERS ═══════════════════════════════
     static class Gfx
     {
         public static GraphicsPath RoundRect(Rectangle r, int rad)
@@ -119,42 +223,82 @@ namespace EndcordInstaller
 
         public bool IsInjected()
         {
-            return Directory.Exists(Path.Combine(ResourcesPath, "app"))
-                && File.Exists(Path.Combine(ResourcesPath, "_app.asar"));
+            try
+            {
+                if (!Directory.Exists(RootPath)) return false;
+                var appDirs = Directory.GetDirectories(RootPath, "app-*");
+                foreach (var appVerDir in appDirs)
+                {
+                    string res = Path.Combine(appVerDir, "resources");
+                    string appDir = Path.Combine(res, "app");
+                    string asarDir = Path.Combine(res, "app.asar");
+
+                    if (Directory.Exists(appDir))
+                    {
+                        string indexJs = Path.Combine(appDir, "index.js");
+                        if (File.Exists(indexJs) && File.ReadAllText(indexJs).Contains("patcher.js"))
+                            return true;
+                    }
+
+                    if (Directory.Exists(asarDir))
+                    {
+                        string indexJs = Path.Combine(asarDir, "index.js");
+                        if (File.Exists(indexJs) && File.ReadAllText(indexJs).Contains("patcher.js"))
+                            return true;
+                    }
+                }
+            }
+            catch { }
+            return false;
         }
 
         public bool IsRunning()
         {
-            string n = Path.GetFileNameWithoutExtension(ExeName ?? "Discord").ToLower();
+            string n = Path.GetFileName(ExeName ?? "Discord.exe");
             foreach (var p in Process.GetProcesses())
-                try { if (p.ProcessName.ToLower() == n) return true; } catch { }
+            {
+                try
+                {
+                    if (string.Equals(p.ProcessName + ".exe", n, StringComparison.OrdinalIgnoreCase)) return true;
+                }
+                catch { }
+            }
             return false;
         }
 
         public void Kill()
         {
-            string n = Path.GetFileNameWithoutExtension(ExeName ?? "Discord").ToLower();
-            var procs = new List<Process>();
-            foreach (var p in Process.GetProcesses())
-                try { if (p.ProcessName.ToLower() == n) procs.Add(p); } catch { }
-
-            // Graceful shutdown first
-            foreach (var p in procs)
-                try { p.CloseMainWindow(); } catch { }
-
-            int w = 0;
-            while (w < 5000)
+            try
             {
-                bool done = true;
-                foreach (var p in procs)
-                    try { if (!p.HasExited) done = false; } catch { }
-                if (done) break;
-                Thread.Sleep(250); w += 250;
+                string exe = ExeName ?? "Discord.exe";
+                Win32Kernel.ForceKillProcessByName(exe);
+                var psi = new ProcessStartInfo("cmd.exe", "/c taskkill /f /im \"" + exe + "\" /t")
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                };
+                var p = Process.Start(psi);
+                if (p != null) p.WaitForExit(3000);
             }
+            catch { }
 
-            // Force kill remaining
-            foreach (var p in procs)
-                try { if (!p.HasExited) { p.Kill(); p.WaitForExit(2000); } } catch { }
+            try
+            {
+                string rootLower = RootPath.ToLower();
+                foreach (var proc in Process.GetProcesses())
+                {
+                    try
+                    {
+                        string mainModule = proc.MainModule != null ? proc.MainModule.FileName : null;
+                        if (!string.IsNullOrEmpty(mainModule) && mainModule.ToLower().StartsWith(rootLower))
+                        {
+                            proc.Kill();
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
         }
 
         public void Launch()
@@ -198,7 +342,7 @@ namespace EndcordInstaller
         CustomProgress progress;
         CustomCheckBox chkAll, chkRestart;
         CustomLink btnRefresh, btnAddPath;
-        Label lblStatus, lblVersion;
+        Label lblStatus;
         CustomActionButton btnAction;
         SidebarTab[] sidebarTabs = new SidebarTab[4];
 
@@ -209,10 +353,10 @@ namespace EndcordInstaller
             try
             {
                 var assembly = Assembly.GetExecutingAssembly();
-                var names = assembly.GetManifestResourceNames();
-                foreach (var name in names)
+                foreach (var name in assembly.GetManifestResourceNames())
                 {
-                    if (name.EndsWith("app_logo.png"))
+                    if (name.EndsWith("app_logo.png", StringComparison.OrdinalIgnoreCase) ||
+                        name.EndsWith("logo.png", StringComparison.OrdinalIgnoreCase))
                     {
                         using (var stream = assembly.GetManifestResourceStream(name))
                         {
@@ -222,6 +366,33 @@ namespace EndcordInstaller
                 }
             }
             catch { }
+
+            try
+            {
+                string localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app_logo.png");
+                if (File.Exists(localPath)) return Image.FromFile(localPath);
+            }
+            catch { }
+
+            try
+            {
+                Bitmap bmp = new Bitmap(28, 28);
+                using (Graphics g = Graphics.FromImage(bmp))
+                {
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    using (Brush b = new LinearGradientBrush(new Rectangle(0, 0, 28, 28), Color.FromArgb(88, 101, 242), Color.FromArgb(114, 137, 218), 45f))
+                    {
+                        g.FillEllipse(b, 0, 0, 28, 28);
+                    }
+                    using (Font font = new Font("Segoe UI", 12, FontStyle.Bold))
+                    {
+                        TextRenderer.DrawText(g, "E", font, new Rectangle(0, 0, 28, 28), Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                    }
+                }
+                return bmp;
+            }
+            catch { }
+
             return null;
         }
 
@@ -271,11 +442,11 @@ namespace EndcordInstaller
                 int textX = 16;
                 if (LogoImg != null)
                 {
-                    g.DrawImage(LogoImg, new Rectangle(16, 6, 32, 32));
-                    textX = 60;
+                    g.DrawImage(LogoImg, new Rectangle(14, 8, 28, 28));
+                    textX = 50;
                 }
-                TextRenderer.DrawText(g, "Endcord", F.Title,
-                    new Rectangle(textX, 0, 150, 44), C.Text,
+                TextRenderer.DrawText(g, "Endcord Installer", F.Title,
+                    new Rectangle(textX, 0, 260, 44), C.Text,
                     TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
             };
 
@@ -298,218 +469,174 @@ namespace EndcordInstaller
             sidebarPanel.Width = 210;
             sidebarPanel.BackColor = C.Sidebar;
 
-            // Sidebar separator line
-            sidebarPanel.Paint += (s, e) =>
-            {
-                using (var p = new Pen(C.Border))
-                    e.Graphics.DrawLine(p, sidebarPanel.Width - 1, 0, sidebarPanel.Width - 1, sidebarPanel.Height);
-            };
+            string[] tabTitles = { "Install Endcord", "Uninstall", "Repair Install", "Close Discord" };
+            string[] tabDesc   = { "Inject client mod", "Restore vanilla", "Fix system files", "Force exit clients" };
 
-            // Sidebar Navigation Tabs
-            string[] tabTitles = { "Install", "Uninstall", "Repair", "Kill Discord" };
-            int tabY = 16;
-            for (int i = 0; i < tabTitles.Length; i++)
+            for (int i = 0; i < 4; i++)
             {
-                var tab = new SidebarTab(tabTitles[i], i);
-                tab.Location = new Point(14, tabY);
-                tab.Width = 182;
-                tab.Click += Tab_Click;
+                int idx = i;
+                var tab = new SidebarTab(tabTitles[i], tabDesc[i], idx == 0);
+                tab.Top = 16 + i * 58;
+                tab.Left = 10;
+                tab.Width = 190;
+                tab.Click += (s, e) => SwitchTab(idx);
                 sidebarTabs[i] = tab;
                 sidebarPanel.Controls.Add(tab);
-                tabY += 46;
             }
-            sidebarTabs[0].Active = true; // Set initial active
-
-            // ── MAIN CONTENT AREA ───────────────────────────────────
-            mainContent = new Panel();
-            mainContent.Dock = DockStyle.Fill;
-            mainContent.BackColor = C.Bg;
-
-            // Toolbar
-            var toolbar = new DBPanel();
-            toolbar.Dock = DockStyle.Top;
-            toolbar.Height = 44;
-            toolbar.BackColor = C.Bg;
-            toolbar.Paint += (s, e) =>
-            {
-                TextRenderer.DrawText(e.Graphics, "DETECTED INSTALLATIONS", F.MutedText,
-                    new Rectangle(20, 16, 200, 18), C.TextDark, TextFormatFlags.Left);
-            };
-
-            btnRefresh = new CustomLink("Refresh", C.TextDim);
-            btnRefresh.Click += (s, e) => RefreshClients();
-
-            btnAddPath = new CustomLink("+ Custom Path", C.Accent);
-            btnAddPath.Click += BtnAddPath_Click;
-
-            toolbar.Controls.Add(btnRefresh);
-            toolbar.Controls.Add(btnAddPath);
-            toolbar.Resize += (s, e) =>
-            {
-                btnAddPath.Location = new Point(toolbar.Width - btnAddPath.Width - 20, 12);
-                btnRefresh.Location = new Point(btnAddPath.Left - btnRefresh.Width - 12, 12);
-            };
-
-            // Client installations layout
-            clientFlow = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Top,
-                Height = 224,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoScroll = true,
-                BackColor = C.Bg,
-                Padding = new Padding(16, 0, 16, 0)
-            };
-
-            // Options bar
-            var optBar = new DBPanel();
-            optBar.Dock = DockStyle.Top;
-            optBar.Height = 40;
-            optBar.BackColor = C.Bg;
-
-            chkAll = new CustomCheckBox("Select all clients");
-            chkAll.Location = new Point(20, 8);
-            chkAll.CheckedChanged += (s, e) => cards.ForEach(c => c.Selected = chkAll.Checked);
-
-            chkRestart = new CustomCheckBox("Restart Discord automatically");
-            chkRestart.Checked = true;
-            chkRestart.Location = new Point(160, 8);
-
-            optBar.Controls.Add(chkAll);
-            optBar.Controls.Add(chkRestart);
-
-            // Log header
-            var logHeader = new DBPanel();
-            logHeader.Dock = DockStyle.Top;
-            logHeader.Height = 24;
-            logHeader.BackColor = C.Bg;
-            logHeader.Paint += (s, e) =>
-            {
-                TextRenderer.DrawText(e.Graphics, "LOG OUTPUT", F.MutedText,
-                    new Rectangle(20, 6, 150, 16), C.TextDark, TextFormatFlags.Left);
-            };
-
-            // Modern Log Box
-            logBox = new RichTextBox
-            {
-                Dock = DockStyle.Fill,
-                BackColor = C.Sidebar,
-                ForeColor = C.TextDim,
-                Font = F.Code,
-                ReadOnly = true,
-                BorderStyle = BorderStyle.None,
-                ScrollBars = RichTextBoxScrollBars.Vertical
-            };
-            logBox.Padding = new Padding(20, 12, 20, 12);
-
-            // Rounded panel containing log box
-            var logBorderPanel = new LogWrapperPanel();
-            logBorderPanel.Dock = DockStyle.Fill;
-            logBorderPanel.Padding = new Padding(20, 4, 20, 16);
-            logBorderPanel.Controls.Add(logBox);
-
-            var bottomInteractiveArea = new Panel();
-            bottomInteractiveArea.Dock = DockStyle.Bottom;
-            bottomInteractiveArea.Height = 90;
-            bottomInteractiveArea.BackColor = C.Bg;
-
-            // Action Button
-            btnAction = new CustomActionButton("INSTALL ENDCORD");
-            btnAction.Location = new Point(20, 12);
-            btnAction.Size = new Size(570, 48);
-            btnAction.Click += (s, e) => DoOperation();
-            bottomInteractiveArea.Controls.Add(btnAction);
-
-            bottomInteractiveArea.Resize += (s, e) =>
-            {
-                btnAction.Width = bottomInteractiveArea.Width - 40;
-            };
-
-            // Progress bar
-            progress = new CustomProgress();
-            progress.Dock = DockStyle.Top;
-            progress.Height = 4;
-            progress.Visible = false;
-
-            mainContent.Controls.Add(logBorderPanel);
-            mainContent.Controls.Add(logHeader);
-            mainContent.Controls.Add(bottomInteractiveArea);
-            mainContent.Controls.Add(progress);
-            mainContent.Controls.Add(optBar);
-            mainContent.Controls.Add(clientFlow);
-            mainContent.Controls.Add(toolbar);
 
             // ── STATUS BAR ──────────────────────────────────────────
             statusBar = new DBPanel();
             statusBar.Dock = DockStyle.Bottom;
-            statusBar.Height = 28;
+            statusBar.Height = 36;
             statusBar.BackColor = C.Sidebar;
-            statusBar.Paint += (s, e) =>
-            {
-                using (var p = new Pen(C.Border))
-                    e.Graphics.DrawLine(p, 0, 0, statusBar.Width, 0);
-            };
 
-            lblStatus = new Label
-            {
-                Text = "Ready", Font = F.MutedText, ForeColor = C.TextDark,
-                AutoSize = true, Location = new Point(20, 7), BackColor = Color.Transparent
-            };
-
+            lblStatus = new Label();
+            lblStatus.Font = F.Subtitle;
+            lblStatus.ForeColor = C.TextDim;
+            lblStatus.Location = new Point(16, 9);
+            lblStatus.AutoSize = true;
+            lblStatus.Text = "Ready";
             statusBar.Controls.Add(lblStatus);
+
+            progress = new CustomProgress();
+            progress.Dock = DockStyle.Right;
+            progress.Width = 220;
+            progress.Visible = false;
+            statusBar.Controls.Add(progress);
+
+            // ── MAIN CONTENT AREA ────────────────────────────────────
+            mainContent = new DBPanel();
+            mainContent.Dock = DockStyle.Fill;
+            mainContent.Padding = new Padding(20, 16, 20, 16);
+
+            // Header bar
+            var headPanel = new DBPanel();
+            headPanel.Dock = DockStyle.Top;
+            headPanel.Height = 32;
+
+            var lblDetected = new Label();
+            lblDetected.Text = "DETECTED DISCORD INSTALLATIONS";
+            lblDetected.Font = F.MutedText;
+            lblDetected.ForeColor = C.TextDark;
+            lblDetected.Location = new Point(0, 8);
+            lblDetected.AutoSize = true;
+            headPanel.Controls.Add(lblDetected);
+
+            btnRefresh = new CustomLink("Refresh");
+            btnRefresh.Dock = DockStyle.Right;
+            btnRefresh.Width = 65;
+            btnRefresh.Click += (s, e) => RefreshClients();
+            headPanel.Controls.Add(btnRefresh);
+
+            btnAddPath = new CustomLink("+ Custom Path");
+            btnAddPath.Dock = DockStyle.Right;
+            btnAddPath.Width = 100;
+            btnAddPath.Click += BtnAddPath_Click;
+            headPanel.Controls.Add(btnAddPath);
+
+            mainContent.Controls.Add(headPanel);
+
+            // Client Cards Flow
+            clientFlow = new FlowLayoutPanel();
+            clientFlow.Dock = DockStyle.Top;
+            clientFlow.Height = 220;
+            clientFlow.AutoScroll = true;
+            clientFlow.WrapContents = false;
+            clientFlow.FlowDirection = FlowDirection.TopDown;
+            clientFlow.Padding = new Padding(0, 4, 0, 4);
+            mainContent.Controls.Add(clientFlow);
+
+            // Options Bar
+            var optsPanel = new DBPanel();
+            optsPanel.Dock = DockStyle.Top;
+            optsPanel.Height = 32;
+
+            chkAll = new CustomCheckBox("Select All");
+            chkAll.Location = new Point(0, 4);
+            chkAll.Width = 100;
+            chkAll.CheckedChanged += (s, e) =>
+            {
+                foreach (var c in cards) c.Selected = chkAll.Checked;
+            };
+            optsPanel.Controls.Add(chkAll);
+
+            chkRestart = new CustomCheckBox("Relaunch Discord after action");
+            chkRestart.Location = new Point(120, 4);
+            chkRestart.Width = 230;
+            chkRestart.Checked = true;
+            optsPanel.Controls.Add(chkRestart);
+
+            mainContent.Controls.Add(optsPanel);
+
+            // Console Log Box
+            logBox = new RichTextBox();
+            logBox.Dock = DockStyle.Fill;
+            logBox.BackColor = C.Sidebar;
+            logBox.ForeColor = C.TextDim;
+            logBox.BorderStyle = BorderStyle.None;
+            logBox.Font = F.Code;
+            logBox.ReadOnly = true;
+            logBox.Margin = new Padding(0, 8, 0, 8);
+            mainContent.Controls.Add(logBox);
+
+            // Bottom Action Bar
+            var actPanel = new DBPanel();
+            actPanel.Dock = DockStyle.Bottom;
+            actPanel.Height = 52;
+
+            btnAction = new CustomActionButton("INSTALL ENDCORD");
+            btnAction.Dock = DockStyle.Right;
+            btnAction.Width = 220;
+            btnAction.Click += (s, e) =>
+            {
+                if (activeTab == 3) DoKill();
+                else DoOperation();
+            };
+            actPanel.Controls.Add(btnAction);
+
+            mainContent.Controls.Add(actPanel);
 
             // Assemble Form
             Controls.Add(mainContent);
             Controls.Add(sidebarPanel);
-            Controls.Add(titleBar);
             Controls.Add(statusBar);
+            Controls.Add(titleBar);
         }
 
-        // ── TITLE BAR BUTTONS ──────────────────────────────────────
-        Button WinBtn(string text, Color hovColor, DockStyle dock)
+        Control WinBtn(string sym, Color hovCol, DockStyle dock)
         {
-            var b = new Button
-            {
-                Text = text, Font = new Font("Webdings", 9),
-                ForeColor = C.TextDark, BackColor = Color.Transparent,
-                FlatStyle = FlatStyle.Flat, Size = new Size(44, 44),
-                Dock = dock, Cursor = Cursors.Hand, TabStop = false
-            };
-            b.FlatAppearance.BorderSize = 0;
-            b.FlatAppearance.MouseOverBackColor = Color.FromArgb(30, hovColor);
-            b.FlatAppearance.MouseDownBackColor = Color.FromArgb(50, hovColor);
-            b.MouseEnter += (s, e) => b.ForeColor = C.Text;
-            b.MouseLeave += (s, e) => b.ForeColor = C.TextDark;
+            var b = new Label();
+            b.Text = sym == "r" ? "✕" : "—";
+            b.Font = new Font("Segoe UI", 9, FontStyle.Bold);
+            b.ForeColor = C.TextDim;
+            b.TextAlign = ContentAlignment.MiddleCenter;
+            b.Size = new Size(44, 44);
+            b.Dock = dock;
+            b.Cursor = Cursors.Hand;
+            b.MouseEnter += (s, e) => { b.BackColor = hovCol; b.ForeColor = Color.White; };
+            b.MouseLeave += (s, e) => { b.BackColor = Color.Transparent; b.ForeColor = C.TextDim; };
             return b;
         }
 
-        // ── TAB CLICK HANDLER ──────────────────────────────────────
-        void Tab_Click(object sender, EventArgs e)
+        void SwitchTab(int idx)
         {
-            var selectedTab = (SidebarTab)sender;
-            if (selectedTab.TabIdx == 3)
-            {
-                DoKill();
-                return;
-            }
+            activeTab = idx;
+            for (int i = 0; i < 4; i++) sidebarTabs[i].SetActive(i == idx);
 
-            activeTab = selectedTab.TabIdx;
-            for (int i = 0; i < 3; i++)
-                sidebarTabs[i].Active = (i == activeTab);
+            chkAll.Checked = true;
+            foreach (var c in cards) c.Selected = true;
 
-            string[] actionTexts = { "INSTALL ENDCORD", "UNINSTALL ENDCORD", "REPAIR INSTALLATION" };
+            string[] actionTexts = { "INSTALL ENDCORD", "UNINSTALL ENDCORD", "REPAIR INSTALLATION", "CLOSE ALL DISCORD" };
             btnAction.Text = actionTexts[activeTab];
             SetStatus("Selected Mode: " + tabTitlesText[activeTab]);
         }
 
-        static readonly string[] tabTitlesText = { "Install", "Uninstall", "Repair" };
+        static readonly string[] tabTitlesText = { "Install", "Uninstall", "Repair", "Kill Discord" };
 
         // ── DETECT DISCORD INSTALLATIONS ────────────────────────────
         void RefreshClients()
         {
             clients.Clear(); cards.Clear(); clientFlow.Controls.Clear();
-            chkAll.Checked = false;
 
             string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             string[,] paths = {
@@ -526,36 +653,25 @@ namespace EndcordInstaller
                 if (c != null) allDetected.Add(c);
             }
 
-            // Filter: if any detected client is running, only show running clients.
-            // Otherwise, show all detected clients.
-            var runningClients = new List<DiscordClient>();
             foreach (var c in allDetected)
-            {
-                if (c.IsRunning()) runningClients.Add(c);
-            }
-
-            var toShow = runningClients.Count > 0 ? runningClients : allDetected;
-
-            foreach (var c in toShow)
             {
                 clients.Add(c);
                 var card = new ClientCard(c);
-                card.Width = 560; // Safe default width before layout
+                card.Width = 560;
+                card.Selected = true;
                 cards.Add(card);
                 clientFlow.Controls.Add(card);
             }
+            chkAll.Checked = true;
 
             if (clients.Count == 0)
             {
-                Log("No Discord installations detected.", C.Amber);
+                Log("No Discord installations detected on this machine.", C.Amber);
                 SetStatus("No Discord installations found");
             }
             else
             {
-                string msg = runningClients.Count > 0 
-                    ? "Showing " + clients.Count + " active/running Discord client(s)."
-                    : "Detected " + clients.Count + " closed Discord client(s).";
-                Log(msg, C.Green);
+                Log("Detected " + clients.Count + " Discord client installation(s).", C.Green);
                 SetStatus("Ready");
             }
         }
@@ -565,7 +681,17 @@ namespace EndcordInstaller
             if (!Directory.Exists(root)) return null;
             var dirs = Directory.GetDirectories(root, "app-*");
             if (dirs.Length == 0) return null;
-            Array.Sort(dirs);
+
+            Array.Sort(dirs, (a, b) =>
+            {
+                string vaStr = Path.GetFileName(a).Replace("app-", "");
+                string vbStr = Path.GetFileName(b).Replace("app-", "");
+                Version va, vb;
+                if (Version.TryParse(vaStr, out va) && Version.TryParse(vbStr, out vb))
+                    return va.CompareTo(vb);
+                return string.Compare(a, b, StringComparison.OrdinalIgnoreCase);
+            });
+
             string latest = dirs[dirs.Length - 1];
             string res = Path.Combine(latest, "resources");
             if (!Directory.Exists(res)) return null;
@@ -583,7 +709,8 @@ namespace EndcordInstaller
             if (c == null) return false;
             clients.Add(c);
             var card = new ClientCard(c);
-            card.Width = 560; // Safe default width before layout
+            card.Width = 560;
+            card.Selected = true;
             cards.Add(card);
             clientFlow.Controls.Add(card);
             return true;
@@ -633,28 +760,27 @@ namespace EndcordInstaller
 
             new Thread(() =>
             {
-                var wasRunning = new List<DiscordClient>();
-                foreach (var c in targets)
-                    if (c.IsRunning()) wasRunning.Add(c);
-
                 try
                 {
-                    SafeLog("Closing Discord to release file locks...", C.TextDim);
-                    KillAllDiscordInstances();
-                    Thread.Sleep(1500);
+                    SafeLog("Closing selected target Discord instances...", C.TextDim);
+                    KillTargetDiscordClients(targets);
+                    Thread.Sleep(1200);
 
                     if (activeTab == 0 || activeTab == 2)
                         DoInstall(targets, activeTab == 2);
                     else
                         DoUninstall(targets);
 
-                    Thread.Sleep(1500);
-                    foreach (var c in targets)
+                    Thread.Sleep(1000);
+                    if (chkRestart.Checked)
                     {
-                        SafeLog("Launching " + c.Name + "...", C.Blue);
-                        c.Launch();
+                        foreach (var c in targets)
+                        {
+                            SafeLog("Relaunching " + c.Name + "...", C.Blue);
+                            c.Launch();
+                        }
                     }
-                    SafeLog("Discord restarted.", C.Green);
+                    SafeLog("Operation finished successfully.", C.Green);
                 }
                 catch (Exception ex) { SafeLog("Error occurred: " + ex.Message, C.Red); }
                 finally
@@ -672,55 +798,113 @@ namespace EndcordInstaller
         static void SafeDeleteDir(string path)
         {
             if (!Directory.Exists(path)) return;
-            for (int i = 0; i < 8; i++)
-            {
-                try
-                {
-                    Directory.Delete(path, true);
-                    return;
-                }
-                catch
-                {
-                    Thread.Sleep(250);
-                }
-            }
-            Directory.Delete(path, true);
+            Win32Kernel.DirectWin32DeleteDir(path);
         }
 
         static void SafeDeleteFile(string path)
         {
             if (!File.Exists(path)) return;
-            for (int i = 0; i < 8; i++)
-            {
-                try
-                {
-                    File.Delete(path);
-                    return;
-                }
-                catch
-                {
-                    Thread.Sleep(250);
-                }
-            }
-            File.Delete(path);
+            Win32Kernel.SetFileAttributes(path, Win32Kernel.FILE_ATTRIBUTE_NORMAL);
+            Win32Kernel.DeleteFile(path);
         }
 
-        static void SafeMoveFile(string src, string dest)
+        // ─── INJECTION HELPERS ───────────────────────────────────────────────────
+
+        // Returns the path to discord_desktop_core index.js if found in modules folder
+        static string FindDesktopCoreIndex(string appVerDir)
         {
-            for (int i = 0; i < 8; i++)
+            string modulesDir = Path.Combine(appVerDir, "modules");
+            if (!Directory.Exists(modulesDir)) return null;
+
+            foreach (string dir in Directory.GetDirectories(modulesDir, "discord_desktop_core-*"))
             {
-                try
-                {
-                    if (File.Exists(dest)) SafeDeleteFile(dest);
-                    File.Move(src, dest);
-                    return;
-                }
-                catch
-                {
-                    Thread.Sleep(250);
-                }
+                // e.g. modules/discord_desktop_core-1/discord_desktop_core/index.js
+                string inner = Path.Combine(dir, "discord_desktop_core", "index.js");
+                if (File.Exists(inner)) return inner;
             }
-            File.Move(src, dest);
+            return null;
+        }
+
+        // Injects our patcher require into index.js (prepend, idempotent)
+        static void InjectDesktopCore(string indexJs)
+        {
+            string patcherLine = "require(require('path').join(process.env.APPDATA, 'Endcord', 'dist', 'patcher.js'));";
+
+            string existing = File.Exists(indexJs) ? File.ReadAllText(indexJs) : "";
+
+            // Make a backup of original if none exists
+            string bakPath = indexJs + ".bak";
+            if (!File.Exists(bakPath))
+                File.WriteAllText(bakPath, existing);
+
+            // Already patched? Skip.
+            if (existing.Contains("Endcord"))
+                return;
+
+            // Prepend our require line
+            File.WriteAllText(indexJs, patcherLine + "\n" + existing);
+        }
+
+        // Restores original index.js from .bak, or removes our patcher line
+        static void RestoreDesktopCore(string indexJs)
+        {
+            string bakPath = indexJs + ".bak";
+            if (File.Exists(bakPath))
+            {
+                File.Copy(bakPath, indexJs, overwrite: true);
+                File.Delete(bakPath);
+            }
+            else if (File.Exists(indexJs))
+            {
+                // Strip our patcher line manually
+                string content = File.ReadAllText(indexJs);
+                string[] lines = content.Split('\n');
+                var filtered = new System.Collections.Generic.List<string>();
+                foreach (var line in lines)
+                    if (!line.Contains("Endcord") && !line.Contains("patcher.js"))
+                        filtered.Add(line);
+                File.WriteAllText(indexJs, string.Join("\n", filtered));
+            }
+        }
+
+        static void SafeBackupAsar(string origAsar, string backupAsar)
+        {
+            if (!File.Exists(origAsar)) return;
+            if (File.Exists(backupAsar) && new FileInfo(backupAsar).Length > 100000) return;
+            Win32Kernel.CopyFile(origAsar, backupAsar, false);
+        }
+
+        static void SafeRestoreAsar(string resDir)
+        {
+            string appDir     = Path.Combine(resDir, "app");
+            string origAsar   = Path.Combine(resDir, "app.asar");
+            string backupAsar = Path.Combine(resDir, "_app.asar");
+
+            if (Directory.Exists(origAsar))
+            {
+                string trapped = Path.Combine(origAsar, "_app.asar");
+                if (File.Exists(trapped) && new FileInfo(trapped).Length > 100000)
+                {
+                    SafeDeleteFile(backupAsar);
+                    try { File.Move(trapped, backupAsar); } catch { }
+                }
+                SafeDeleteDir(origAsar);
+            }
+
+            if (Directory.Exists(appDir))
+            {
+                string idxFile = Path.Combine(appDir, "index.js");
+                if (File.Exists(idxFile)) SafeDeleteFile(idxFile);
+                SafeDeleteDir(appDir);
+            }
+
+            if (File.Exists(backupAsar))
+            {
+                SafeDeleteFile(origAsar);
+                Win32Kernel.CopyFile(backupAsar, origAsar, false);
+                if (File.Exists(origAsar) && new FileInfo(origAsar).Length > 100000)
+                    SafeDeleteFile(backupAsar);
+            }
         }
 
         void DoInstall(List<DiscordClient> targets, bool repair)
@@ -728,6 +912,7 @@ namespace EndcordInstaller
             SafeLog(repair ? "Starting Endcord repair..." : "Starting Endcord installation...", C.AccentLight);
             SetProg(5);
 
+            // ── Step 1: Extract dist files ────────────────────────────────────────
             try
             {
                 Directory.CreateDirectory(DistPath);
@@ -744,33 +929,63 @@ namespace EndcordInstaller
             }
             catch (Exception ex) { SafeLog("Extraction failed: " + ex.Message, C.Red); return; }
 
-            SafeLog("Injecting patcher into Discord client directories...", C.TextDim);
+            SafeLog("Injecting patcher into Discord clients...", C.TextDim);
             SetProg(48);
 
+            // ── Step 2: Inject into each Discord version ──────────────────────────
             for (int i = 0; i < targets.Count; i++)
             {
                 var c = targets[i];
                 try
                 {
-                    string appDir  = Path.Combine(c.ResourcesPath, "app");
-                    string origAsar = Path.Combine(c.ResourcesPath, "app.asar");
-                    string backupAsar  = Path.Combine(c.ResourcesPath, "_app.asar");
+                    c.Kill();
+                    Thread.Sleep(600);
 
-                    if (File.Exists(origAsar) && !File.Exists(backupAsar)) SafeMoveFile(origAsar, backupAsar);
-                    Directory.CreateDirectory(appDir);
+                    var appDirs = Directory.GetDirectories(c.RootPath, "app-*");
+                    if (appDirs.Length == 0)
+                        SafeLog("No app-* version folders found for " + c.Name, C.Red);
 
-                    File.WriteAllText(Path.Combine(appDir, "package.json"),
-                        "{\n  \"name\": \"discord\",\n  \"main\": \"index.js\"\n}");
+                    bool patchedAny = false;
+                    foreach (var appVerDir in appDirs)
+                    {
+                        // ── PRIMARY: discord_desktop_core injection (modern Discord) ──
+                        string coreIndex = FindDesktopCoreIndex(appVerDir);
+                        if (coreIndex != null)
+                        {
+                            SafeLog("  [core] " + coreIndex, C.TextDim);
+                            InjectDesktopCore(coreIndex);
+                            patchedAny = true;
+                            continue;
+                        }
 
-                    File.WriteAllText(Path.Combine(appDir, "index.js"),
-                        "const { join } = require('path');\n" +
-                        "require.main.path = join(__dirname, '..', '_app.asar');\n" +
-                        "const appData = process.env.APPDATA || (process.platform === 'darwin' ?\n" +
-                        "  join(process.env.HOME, 'Library/Application Support') :\n" +
-                        "  join(process.env.HOME, '.config'));\n" +
-                        "require(join(appData, 'Endcord', 'dist', 'patcher.js'));\n");
+                        // ── FALLBACK: legacy resources/app/index.js injection ────────
+                        string res = Path.Combine(appVerDir, "resources");
+                        if (!Directory.Exists(res)) continue;
 
-                    SafeLog("Successfully patched " + c.Name + " (" + c.Version + ")", C.Green);
+                        string appDir     = Path.Combine(res, "app");
+                        string origAsar   = Path.Combine(res, "app.asar");
+                        string backupAsar = Path.Combine(res, "_app.asar");
+
+                        if (Directory.Exists(origAsar)) SafeRestoreAsar(res);
+                        SafeBackupAsar(origAsar, backupAsar);
+
+                        if (Directory.Exists(appDir)) SafeDeleteDir(appDir);
+                        Directory.CreateDirectory(appDir);
+
+                        File.WriteAllText(Path.Combine(appDir, "package.json"),
+                            "{\n  \"name\": \"discord\",\n  \"main\": \"index.js\"\n}");
+
+                        File.WriteAllText(Path.Combine(appDir, "index.js"),
+                            "require(require('path').join(process.env.APPDATA, 'Endcord', 'dist', 'patcher.js'));\n");
+
+                        SafeLog("  [legacy] " + appDir, C.TextDim);
+                        patchedAny = true;
+                    }
+
+                    if (patchedAny)
+                        SafeLog("Successfully patched " + c.Name + " (" + c.Version + ")", C.Green);
+                    else
+                        SafeLog("No patchable paths found for " + c.Name, C.Red);
                 }
                 catch (Exception ex) { SafeLog("Failed patching " + c.Name + ": " + ex.Message, C.Red); }
                 SetProg(48 + 52 * (i + 1) / targets.Count);
@@ -781,47 +996,76 @@ namespace EndcordInstaller
 
         void DoUninstall(List<DiscordClient> targets)
         {
-            SafeLog("Removing Endcord from installations...", C.AccentLight);
+            SafeLog("Removing Endcord from selected installations...", C.AccentLight);
             for (int i = 0; i < targets.Count; i++)
             {
                 var c = targets[i];
                 try
                 {
-                    string appDir  = Path.Combine(c.ResourcesPath, "app");
-                    string origAsar = Path.Combine(c.ResourcesPath, "app.asar");
-                    string backupAsar  = Path.Combine(c.ResourcesPath, "_app.asar");
+                    ForceKillClient(c);
+                    Thread.Sleep(600);
 
-                    SafeDeleteDir(appDir);
-                    if (File.Exists(backupAsar)) SafeMoveFile(backupAsar, origAsar);
+                    var appDirs = Directory.GetDirectories(c.RootPath, "app-*");
+                    foreach (var appVerDir in appDirs)
+                    {
+                        // ── PRIMARY: restore discord_desktop_core ──────────────────
+                        string coreIndex = FindDesktopCoreIndex(appVerDir);
+                        if (coreIndex != null)
+                        {
+                            RestoreDesktopCore(coreIndex);
+                            continue;
+                        }
+
+                        // ── FALLBACK: restore legacy resources/app ─────────────────
+                        string res = Path.Combine(appVerDir, "resources");
+                        if (!Directory.Exists(res)) continue;
+                        SafeRestoreAsar(res);
+                    }
                     SafeLog("Successfully uninstalled from " + c.Name, C.Green);
                 }
                 catch (Exception ex) { SafeLog("Failed to restore " + c.Name + ": " + ex.Message, C.Red); }
                 SetProg(100 * (i + 1) / targets.Count);
             }
+
+            try
+            {
+                if (Directory.Exists(DistPath)) SafeDeleteDir(DistPath);
+            }
+            catch { }
+
             SafeLog("Uninstall complete.", C.AccentLight);
+        }
+
+        static void ForceKillClient(DiscordClient c)
+        {
+            if (c == null) return;
+            try
+            {
+                string exeName = Path.GetFileName(c.ExeName ?? "Discord.exe");
+                Win32Kernel.ForceKillProcessByName(exeName);
+            }
+            catch { }
+        }
+
+        static void KillTargetDiscordClients(List<DiscordClient> targets)
+        {
+            foreach (var c in targets)
+            {
+                try { ForceKillClient(c); } catch { }
+            }
         }
 
         static void KillAllDiscordInstances()
         {
-            var procs = new List<Process>();
-            foreach (var p in Process.GetProcesses())
-                try { if (p.ProcessName.ToLower().Contains("discord")) procs.Add(p); } catch { }
-
-            foreach (var p in procs)
-                try { p.CloseMainWindow(); } catch { }
-
-            int w = 0;
-            while (w < 5000)
+            string[] exes = { "Discord.exe", "DiscordCanary.exe", "DiscordPTB.exe", "DiscordDevelopment.exe", "Update.exe" };
+            foreach (var exe in exes)
             {
-                bool done = true;
-                foreach (var p in procs)
-                    try { if (!p.HasExited) done = false; } catch { }
-                if (done) break;
-                Thread.Sleep(250); w += 250;
+                try
+                {
+                    Win32Kernel.ForceKillProcessByName(exe);
+                }
+                catch { }
             }
-
-            foreach (var p in procs)
-                try { if (!p.HasExited) { p.Kill(); p.WaitForExit(2000); } } catch { }
         }
 
         static void ExtractRes(string name, string dest)
@@ -847,49 +1091,42 @@ namespace EndcordInstaller
         void SafeLog(string m, Color c)
         { if (InvokeRequired) Invoke(new Action(() => Log(m, c))); else Log(m, c); }
         void SetProg(int v)
-        {
-            if (InvokeRequired) Invoke(new Action(() => { progress.Value = Math.Min(v, 100); progress.Invalidate(); }));
-            else { progress.Value = Math.Min(v, 100); progress.Invalidate(); }
-        }
+        { if (InvokeRequired) Invoke(new Action(() => progress.Value = v)); else progress.Value = v; }
         void SetStatus(string s)
         { if (InvokeRequired) Invoke(new Action(() => lblStatus.Text = s)); else lblStatus.Text = s; }
         void SetBusy(bool b)
         {
-            btnAction.Enabled = !b; btnRefresh.Enabled = !b;
-            btnAddPath.Enabled = !b; chkAll.Enabled = !b;
-            for (int i = 0; i < 4; i++) sidebarTabs[i].Enabled = !b;
-        }
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            base.OnPaint(e);
-            using (var p = new Pen(C.Border, 1))
-                e.Graphics.DrawRectangle(p, 0, 0, Width - 1, Height - 1);
+            btnAction.Enabled = !b;
+            btnRefresh.Enabled = !b;
+            btnAddPath.Enabled = !b;
+            chkAll.Enabled = !b;
         }
     }
 
-    // ═══════════════════════════════ SIDEBAR NAVIGATION TAB ═══════════════════════════════
-    class SidebarTab : DBPanel
+    // ═══════════════════════════════ CUSTOM CONTROLS & RENDERING ═══════════════════════════════
+    class DBPanel : Panel
     {
-        public int TabIdx;
-        bool _hov, _active;
-        string _title;
-
-        public bool Active
+        public DBPanel()
         {
-            get { return _active; }
-            set { _active = value; Invalidate(); }
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.DoubleBuffer | ControlStyles.OptimizedDoubleBuffer, true);
         }
+    }
 
-        public SidebarTab(string title, int index)
+    class SidebarTab : Control
+    {
+        bool _active = false;
+        bool _hov = false;
+        string _title, _desc;
+
+        public SidebarTab(string title, string desc, bool active)
         {
-            _title = title;
-            TabIdx = index;
-            Height = 38;
-            Cursor = Cursors.Hand;
+            _title = title; _desc = desc; _active = active;
+            Height = 50; Cursor = Cursors.Hand; DoubleBuffered = true;
             MouseEnter += (s, e) => { _hov = true; Invalidate(); };
             MouseLeave += (s, e) => { _hov = false; Invalidate(); };
         }
+
+        public void SetActive(bool a) { _active = a; Invalidate(); }
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -897,84 +1134,48 @@ namespace EndcordInstaller
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
 
-            var r = new Rectangle(0, 0, Width, Height);
-
+            var r = new Rectangle(0, 0, Width - 1, Height - 1);
             if (_active)
             {
-                Gfx.FillRoundRect(g, r, 6, C.Card);
-                // Active indicator line on the left side
-                Gfx.FillRoundRect(g, new Rectangle(0, 8, 4, Height - 16), 2, C.Accent);
+                Gfx.FillRoundRect(g, r, 6, C.CardSel);
+                Gfx.DrawRoundRect(g, r, 6, C.Accent, 1.25f);
             }
             else if (_hov)
             {
-                Gfx.FillRoundRect(g, r, 6, Color.FromArgb(12, C.Card));
+                Gfx.FillRoundRect(g, r, 6, C.CardHov);
             }
 
-            Color textColor = _active ? C.Text : (_hov ? C.TextDim : C.TextDark);
-            TextRenderer.DrawText(g, _title, F.TabText,
-                new Rectangle(12, 0, Width - 24, Height), textColor,
-                TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
+            TextRenderer.DrawText(g, _title, F.TabText, new Rectangle(14, 8, Width - 20, 20),
+                _active ? C.Text : (_hov ? C.Text : C.TextDim), TextFormatFlags.Left);
+
+            TextRenderer.DrawText(g, _desc, F.MutedText, new Rectangle(14, 28, Width - 20, 16),
+                _active ? C.AccentLight : C.TextDark, TextFormatFlags.Left);
         }
     }
 
-    // ═══════════════════════════════ CLIENT INSTALLATION CARD ═══════════════════════════════
-    class ClientCard : DBPanel
+    class ClientCard : Control
     {
         DiscordClient dc;
-        bool _sel, _hov;
-        public bool Selected { get { return _sel; } set { _sel = value; Invalidate(); } }
+        bool _sel = false;
+        bool _hov = false;
+
+        public bool Selected
+        {
+            get { return _sel; }
+            set { _sel = value; Invalidate(); }
+        }
 
         public ClientCard(DiscordClient client)
         {
             dc = client;
-            Height = 72;
-            Margin = new Padding(0, 0, 0, 8);
-            Cursor = Cursors.Hand;
-            Click      += (s, e) => { Selected = !_sel; };
-            MouseEnter += (s, e) => { _hov = true;  Invalidate(); };
+            Height = 72; Margin = new Padding(0, 0, 0, 8);
+            Cursor = Cursors.Hand; DoubleBuffered = true;
+            MouseEnter += (s, e) => { _hov = true; Invalidate(); };
             MouseLeave += (s, e) => { _hov = false; Invalidate(); };
-            Paint += DrawCard;
+            Click += (s, e) => { Selected = !_sel; };
         }
 
-        protected override void OnParentChanged(EventArgs e)
-        {
-            base.OnParentChanged(e);
-            if (Parent != null)
-            {
-                Parent.SizeChanged -= Parent_SizeChanged;
-                Parent.SizeChanged += Parent_SizeChanged;
-                UpdateWidth();
-            }
-        }
-
-        private void Parent_SizeChanged(object sender, EventArgs e)
-        {
-            UpdateWidth();
-        }
-
-        private void UpdateWidth()
-        {
-            if (Parent != null)
-            {
-                int targetW = Parent.ClientSize.Width - 36;
-                if (targetW > 100 && Width != targetW)
-                {
-                    Width = targetW;
-                    Invalidate();
-                }
-            }
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing && Parent != null)
-            {
-                Parent.SizeChanged -= Parent_SizeChanged;
-            }
-            base.Dispose(disposing);
-        }
-
-        void DrawCard(object s, PaintEventArgs e)
+        protected override void OnPaint(PaintEventArgs e)
         {
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
@@ -982,19 +1183,16 @@ namespace EndcordInstaller
 
             var r = new Rectangle(0, 0, Width - 1, Height - 1);
 
-            // Card background
             Color bg = _sel ? C.CardSel : (_hov ? C.CardHov : C.Card);
             Gfx.FillRoundRect(g, r, 8, bg);
 
-            // Sleek border
             if (_sel)
-                Gfx.DrawRoundRect(g, r, 8, Color.FromArgb(120, C.Accent), 1.25f);
+                Gfx.DrawRoundRect(g, r, 8, Color.FromArgb(140, C.Accent), 1.25f);
             else if (_hov)
-                Gfx.DrawRoundRect(g, r, 8, Color.FromArgb(40, C.Accent), 1f);
+                Gfx.DrawRoundRect(g, r, 8, Color.FromArgb(60, C.Accent), 1f);
             else
                 Gfx.DrawRoundRect(g, r, 8, C.Border, 1f);
 
-            // Checkbox Circle
             int cx = 24, cy = Height / 2;
             var chkRect = new Rectangle(cx - 9, cy - 9, 18, 18);
             if (_sel)
@@ -1014,7 +1212,6 @@ namespace EndcordInstaller
             int tx = 52;
             bool running = dc.IsRunning();
 
-            // Status indicator dot
             if (running)
             {
                 using (var b = new SolidBrush(C.Green))
@@ -1022,66 +1219,55 @@ namespace EndcordInstaller
                 tx += 14;
             }
 
-            // Client Name
             TextRenderer.DrawText(g, dc.Name, F.Title,
                 new Rectangle(tx, 8, Width - tx - 160, 20),
                 C.Text, TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
 
-            // Version and running status
             string info = dc.Version + (running ? "  ·  Running" : "  ·  Closed");
             TextRenderer.DrawText(g, info, F.Subtitle,
-                new Rectangle(tx, 28, Width - 200, 18), 
+                new Rectangle(tx, 28, Width - 200, 18),
                 running ? C.Green : C.TextDim, TextFormatFlags.Left);
 
-            // Path
             TextRenderer.DrawText(g, dc.ResourcesPath, F.MutedText,
-                new Rectangle(tx, 48, Width - 200, 14), 
+                new Rectangle(tx, 48, Width - 200, 14),
                 C.TextDim, TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
 
-            // 1. Edition Badge (e.g. STABLE, CANARY, PTB)
             string editionStr = "CUSTOM";
             Color edColor = C.TextDim;
             Color edBgColor = Color.FromArgb(20, C.TextDim);
-            if (dc.Name.Contains("Stable")) { editionStr = "STABLE"; edColor = C.Blue; edBgColor = Color.FromArgb(20, C.Blue); }
-            else if (dc.Name.Contains("Canary")) { editionStr = "CANARY"; edColor = C.Amber; edBgColor = Color.FromArgb(20, C.Amber); }
-            else if (dc.Name.Contains("PTB")) { editionStr = "PTB"; edColor = C.Accent; edBgColor = Color.FromArgb(20, C.Accent); }
-            else if (dc.Name.Contains("Dev")) { editionStr = "DEV"; edColor = C.Red; edBgColor = Color.FromArgb(20, C.Red); }
+            if (dc.Name.Contains("Stable")) { editionStr = "STABLE"; edColor = C.Blue; edBgColor = Color.FromArgb(25, C.Blue); }
+            else if (dc.Name.Contains("Canary")) { editionStr = "CANARY"; edColor = C.Amber; edBgColor = Color.FromArgb(25, C.Amber); }
+            else if (dc.Name.Contains("PTB")) { editionStr = "PTB"; edColor = C.Accent; edBgColor = Color.FromArgb(25, C.Accent); }
+            else if (dc.Name.Contains("Dev")) { editionStr = "DEV"; edColor = C.Red; edBgColor = Color.FromArgb(25, C.Red); }
 
             var edSize = TextRenderer.MeasureText(editionStr, F.MutedText);
-            // 2. Status Badge (PATCHED / VANILLA)
             bool injected = dc.IsInjected();
-            string statusStr = injected ? "PATCHED" : "VANILLA";
+            string statusStr = injected ? "ENDCORD PATCHED" : "VANILLA";
             Color statusColor = injected ? C.Green : C.Amber;
             Color statusBgColor = injected ? C.GreenBg : C.AmberBg;
             var statusSize = TextRenderer.MeasureText(statusStr, F.MutedText);
 
-            // Calculate layout bounds from right to left
             int margin = 16;
-            int badgeY = (Height - 20) / 2;
+            int badgeY = (Height - 22) / 2;
 
-            // Status Badge Rect (rightmost)
             int statusW = statusSize.Width + 14;
-            var statusRect = new Rectangle(Width - statusW - margin, badgeY, statusW, 20);
+            var statusRect = new Rectangle(Width - statusW - margin, badgeY, statusW, 22);
 
-            // Edition Badge Rect (to the left of status badge)
             int edW = edSize.Width + 14;
-            var edRect = new Rectangle(statusRect.Left - edW - 8, badgeY, edW, 20);
+            var edRect = new Rectangle(statusRect.Left - edW - 8, badgeY, edW, 22);
 
-            // Draw Edition
             Gfx.FillRoundRect(g, edRect, 5, edBgColor);
-            Gfx.DrawRoundRect(g, edRect, 5, Color.FromArgb(60, edColor), 1f);
+            Gfx.DrawRoundRect(g, edRect, 5, Color.FromArgb(70, edColor), 1f);
             TextRenderer.DrawText(g, editionStr, F.MutedText, edRect, edColor,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
 
-            // Draw Status
             Gfx.FillRoundRect(g, statusRect, 5, statusBgColor);
-            Gfx.DrawRoundRect(g, statusRect, 5, Color.FromArgb(60, statusColor), 1f);
+            Gfx.DrawRoundRect(g, statusRect, 5, Color.FromArgb(70, statusColor), 1f);
             TextRenderer.DrawText(g, statusStr, F.MutedText, statusRect, statusColor,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
         }
     }
 
-    // ═══════════════════════════════ FLAT MODERN CUSTOM CHECKBOX ═══════════════════════════════
     class CustomCheckBox : Control
     {
         bool _checked = false;
@@ -1097,10 +1283,7 @@ namespace EndcordInstaller
 
         public CustomCheckBox(string text)
         {
-            Text = text;
-            Height = 22;
-            Cursor = Cursors.Hand;
-            DoubleBuffered = true;
+            Text = text; Height = 22; Cursor = Cursors.Hand; DoubleBuffered = true;
             MouseEnter += (s, e) => { _hov = true; Invalidate(); };
             MouseLeave += (s, e) => { _hov = false; Invalidate(); };
             Click += (s, e) => Checked = !_checked;
@@ -1112,89 +1295,88 @@ namespace EndcordInstaller
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
 
-            var box = new Rectangle(0, (Height - 16) / 2, 16, 16);
-
+            var chkRect = new Rectangle(0, 3, 16, 16);
             if (_checked)
             {
-                Gfx.FillRoundRect(g, box, 4, C.Accent);
+                Gfx.FillRoundRect(g, chkRect, 4, C.Accent);
                 using (var p = new Pen(Color.White, 2f))
                 {
-                    g.DrawLine(p, 3, Height / 2, 6, Height / 2 + 3);
-                    g.DrawLine(p, 6, Height / 2 + 3, 12, Height / 2 - 3);
+                    g.DrawLine(p, 3, 10, 6, 13);
+                    g.DrawLine(p, 6, 13, 12, 6);
                 }
             }
             else
             {
-                Gfx.DrawRoundRect(g, box, 4, _hov ? C.TextDim : C.TextDark, 1.5f);
+                Gfx.DrawRoundRect(g, chkRect, 4, _hov ? C.TextDim : C.TextDark, 1.5f);
             }
 
-            var textRect = new Rectangle(22, 0, Width - 22, Height);
-            TextRenderer.DrawText(g, Text, F.LabelText, textRect, _hov ? C.Text : C.TextDim,
-                TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
-        }
-
-        protected override void OnResize(EventArgs e)
-        {
-            base.OnResize(e);
-            var sz = TextRenderer.MeasureText(Text, F.LabelText);
-            Width = sz.Width + 26;
+            TextRenderer.DrawText(g, Text, F.LabelText, new Rectangle(24, 0, Width - 24, Height),
+                _hov ? C.Text : C.TextDim, TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
         }
     }
 
-    // ═══════════════════════════════ MODERN LINK ═══════════════════════════════
-    class CustomLink : Label
+    class CustomLink : Control
     {
-        Color _defaultColor;
-        bool _hov;
-
-        public CustomLink(string text, Color baseColor)
+        bool _hov = false;
+        public CustomLink(string text)
         {
-            _defaultColor = baseColor;
-            Text = text;
-            Font = F.Subtitle;
-            ForeColor = baseColor;
-            BackColor = Color.Transparent;
-            AutoSize = true;
-            Cursor = Cursors.Hand;
-            Padding = new Padding(4);
-            MouseEnter += (s, e) => { _hov = true; ForeColor = C.Text; };
-            MouseLeave += (s, e) => { _hov = false; ForeColor = _defaultColor; };
-        }
-    }
-
-    // ═══════════════════════════════ LOG CONTAINER PANEL ═══════════════════════════════
-    class LogWrapperPanel : Panel
-    {
-        public LogWrapperPanel()
-        {
-            DoubleBuffered = true;
+            Text = text; Height = 20; Cursor = Cursors.Hand; DoubleBuffered = true;
+            MouseEnter += (s, e) => { _hov = true; Invalidate(); };
+            MouseLeave += (s, e) => { _hov = false; Invalidate(); };
         }
 
         protected override void OnPaint(PaintEventArgs e)
         {
             var g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            var borderRect = new Rectangle(Padding.Left - 1, Padding.Top - 1, Width - Padding.Horizontal + 1, Height - Padding.Vertical + 1);
-            Gfx.FillRoundRect(g, borderRect, 6, C.Sidebar);
-            Gfx.DrawRoundRect(g, borderRect, 6, C.Border, 1f);
+            g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+            TextRenderer.DrawText(g, Text, F.Subtitle, new Rectangle(0, 0, Width, Height),
+                _hov ? C.AccentLight : C.TextDim, TextFormatFlags.VerticalCenter | TextFormatFlags.Right);
         }
     }
 
-    // ═══════════════════════════════ CUSTOM GRADIENT ACTION BUTTON ═══════════════════════════════
+    class CustomProgress : Control
+    {
+        int _val = 0;
+        public int Value
+        {
+            get { return _val; }
+            set { _val = Math.Max(0, Math.Min(100, value)); Invalidate(); }
+        }
+
+        public CustomProgress() { Height = 8; DoubleBuffered = true; }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+
+            var r = new Rectangle(0, (Height - 6) / 2, Width, 6);
+            Gfx.FillRoundRect(g, r, 3, C.Card);
+
+            if (_val > 0)
+            {
+                int w = (int)(Width * (_val / 100f));
+                if (w > 6)
+                {
+                    var pr = new Rectangle(0, (Height - 6) / 2, w, 6);
+                    Gfx.FillGradientRoundRect(g, pr, 3, C.Accent, C.AccentLight, 0f);
+                }
+            }
+        }
+    }
+
     class CustomActionButton : Control
     {
         bool _hov = false;
-        bool _pressed = false;
+        bool _down = false;
 
         public CustomActionButton(string text)
         {
-            Text = text;
-            Cursor = Cursors.Hand;
-            DoubleBuffered = true;
+            Text = text; Height = 42; Cursor = Cursors.Hand; DoubleBuffered = true;
             MouseEnter += (s, e) => { _hov = true; Invalidate(); };
-            MouseLeave += (s, e) => { _hov = false; _pressed = false; Invalidate(); };
-            MouseDown += (s, e) => { if (e.Button == MouseButtons.Left) { _pressed = true; Invalidate(); } };
-            MouseUp += (s, e) => { if (_pressed) { _pressed = false; Invalidate(); } };
+            MouseLeave += (s, e) => { _hov = false; _down = false; Invalidate(); };
+            MouseDown  += (s, e) => { _down = true; Invalidate(); };
+            MouseUp    += (s, e) => { _down = false; Invalidate(); };
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -1204,173 +1386,45 @@ namespace EndcordInstaller
             g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
 
             var r = new Rectangle(0, 0, Width - 1, Height - 1);
-
             if (!Enabled)
             {
-                Gfx.FillRoundRect(g, r, 6, C.Card);
-                Gfx.DrawRoundRect(g, r, 6, C.Border, 1f);
-                TextRenderer.DrawText(g, Text, F.ButtonText, r, C.TextDark,
-                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                Gfx.FillRoundRect(g, r, 8, C.Border);
+                TextRenderer.DrawText(g, Text, F.ButtonText, r, C.TextDark, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
                 return;
             }
 
-            Color c1 = _pressed ? C.AccentLo : (_hov ? C.AccentLight : C.Accent);
-            Color c2 = _pressed ? C.AccentLight : (_hov ? C.Accent : C.AccentLo);
+            Color c1 = _down ? C.AccentLo : (_hov ? C.AccentLight : C.Accent);
+            Color c2 = _down ? C.Accent : (_hov ? C.Accent : C.AccentLo);
 
-            // Accent Glow
-            if (_hov)
-            {
-                using (var path = Gfx.RoundRect(new Rectangle(2, 2, Width - 5, Height - 5), 6))
-                using (var p = new Pen(C.AccentLight, 2f))
-                    g.DrawPath(p, path);
-            }
-
-            Gfx.FillGradientRoundRect(g, r, 6, c1, c2, 135f);
-            TextRenderer.DrawText(g, Text, F.ButtonText, r, Color.White,
-                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            Gfx.FillGradientRoundRect(g, r, 8, c1, c2, 45f);
+            TextRenderer.DrawText(g, Text, F.ButtonText, r, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
         }
     }
 
-    // ═══════════════════════════════ CUSTOM COMPACT PROGRESS BAR ═══════════════════════════════
-    class CustomProgress : Control
-    {
-        public int Value;
-        public CustomProgress() { DoubleBuffered = true; }
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            var g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var b = new SolidBrush(C.Bg)) g.FillRectangle(b, ClientRectangle);
-
-            if (Value > 0)
-            {
-                int w = Math.Max(1, (int)(Width * Value / 100.0));
-                var progressRect = new Rectangle(0, 0, w, Height);
-                using (var brush = new LinearGradientBrush(new Rectangle(0, 0, Math.Max(1, Width), Height), C.Accent, C.AccentLight, 0f))
-                    g.FillRectangle(brush, progressRect);
-            }
-        }
-    }
-
-    // ═══════════════════════════════ DOUBLE BUFFERED PANEL ═══════════════════════════════
-    class DBPanel : Panel
-    {
-        public DBPanel()
-        {
-            DoubleBuffered = true;
-            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer, true);
-        }
-    }
-
-    // ═══════════════════════════════ CUSTOM PATH DIALOG ═══════════════════════════════
     class PathDialog : Form
     {
-        [DllImport("Gdi32.dll", EntryPoint = "CreateRoundRectRgn")]
-        private static extern IntPtr CreateRoundRectRgn(int nLeft, int nTop, int nRight, int nBottom, int nWidthEllipse, int nHeightEllipse);
-
-        [DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool DeleteObject(IntPtr hObject);
-
+        public string SelectedPath { get; private set; }
         TextBox txt;
-        public string SelectedPath { get { return txt.Text; } }
 
         public PathDialog()
         {
             Text = "Custom Discord Path";
-            ClientSize = new Size(480, 160);
-            StartPosition = FormStartPosition.CenterParent;
-            BackColor = C.Bg;
+            Size = new Size(480, 160);
+            BackColor = C.Sidebar;
             ForeColor = C.Text;
-            FormBorderStyle = FormBorderStyle.None;
-            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.DoubleBuffer, true);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false; MinimizeBox = false;
+            StartPosition = FormStartPosition.CenterParent;
 
-            Paint += (s, e) =>
-            {
-                using (var p = new Pen(C.Border, 1))
-                    e.Graphics.DrawRectangle(p, 0, 0, Width - 1, Height - 1);
-            };
+            var lbl = new Label { Text = "Select or paste path to Discord app folder:", Left = 20, Top = 16, AutoSize = true, Font = F.Subtitle, ForeColor = C.TextDim };
+            txt = new TextBox { Left = 20, Top = 42, Width = 424, Font = F.Subtitle, BackColor = C.Bg, ForeColor = C.Text, BorderStyle = BorderStyle.FixedSingle };
 
-            // Custom Title/Header
-            var header = new DBPanel { Dock = DockStyle.Top, Height = 40, BackColor = C.Sidebar };
-            header.Paint += (s, e) =>
-            {
-                var g = e.Graphics;
-                g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
-                TextRenderer.DrawText(g, "Select Custom Discord Installation", F.Title,
-                    new Rectangle(16, 0, Width - 32, 40), C.Text, TextFormatFlags.VerticalCenter);
-                using (var p = new Pen(C.Border)) g.DrawLine(p, 0, 39, header.Width, 39);
-            };
+            var btnOk = new Button { Text = "Add", Left = 264, Top = 80, Width = 80, Height = 30, DialogResult = DialogResult.OK, BackColor = C.Accent, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+            var btnCancel = new Button { Text = "Cancel", Left = 364, Top = 80, Width = 80, Height = 30, DialogResult = DialogResult.Cancel, BackColor = C.Card, ForeColor = C.Text, FlatStyle = FlatStyle.Flat };
 
-            bool drag = false; Point dp = Point.Empty;
-            header.MouseDown += (s, e) => { if (e.Button == MouseButtons.Left) { drag = true; dp = e.Location; } };
-            header.MouseMove += (s, e) => { if (drag) Location = new Point(Location.X + e.X - dp.X, Location.Y + e.Y - dp.Y); };
-            header.MouseUp   += (s, e) => drag = false;
+            btnOk.Click += (s, e) => SelectedPath = txt.Text;
 
-            var lbl = new Label
-            {
-                Text = "Browse and select the local folder containing the Discord app:",
-                Font = F.Subtitle, ForeColor = C.TextDim, Location = new Point(16, 52), AutoSize = true
-            };
-
-            txt = new TextBox
-            {
-                Location = new Point(16, 76), Size = new Size(340, 23),
-                BackColor = C.Card, ForeColor = C.Text,
-                BorderStyle = BorderStyle.FixedSingle, Font = F.LabelText
-            };
-
-            var btnBrowse = new Button
-            {
-                Text = "Browse...", Location = new Point(366, 74),
-                Size = new Size(98, 24), BackColor = C.Sidebar,
-                ForeColor = C.TextDim, FlatStyle = FlatStyle.Flat,
-                Font = F.Subtitle, Cursor = Cursors.Hand
-            };
-            btnBrowse.FlatAppearance.BorderColor = C.Border;
-            btnBrowse.FlatAppearance.MouseOverBackColor = C.CardHov;
-            btnBrowse.Click += (s, e) =>
-            {
-                using (var fbd = new FolderBrowserDialog { Description = "Select Discord directory", ShowNewFolderButton = false })
-                {
-                    if (!string.IsNullOrEmpty(txt.Text) && Directory.Exists(txt.Text))
-                        fbd.SelectedPath = txt.Text;
-                    if (fbd.ShowDialog() == DialogResult.OK) txt.Text = fbd.SelectedPath;
-                }
-            };
-
-            var btnOk = new Button
-            {
-                Text = "Add", Location = new Point(300, 120),
-                Size = new Size(76, 28), BackColor = C.Accent,
-                ForeColor = Color.White, FlatStyle = FlatStyle.Flat,
-                Font = F.ButtonText, Cursor = Cursors.Hand
-            };
-            btnOk.FlatAppearance.BorderSize = 0;
-            btnOk.FlatAppearance.MouseOverBackColor = C.AccentLight;
-            btnOk.Click += (s, e) => { DialogResult = DialogResult.OK; Close(); };
-
-            var btnCancel = new Button
-            {
-                Text = "Cancel", Location = new Point(386, 120),
-                Size = new Size(78, 28), BackColor = C.Sidebar,
-                ForeColor = C.TextDim, FlatStyle = FlatStyle.Flat,
-                Font = F.Subtitle, Cursor = Cursors.Hand
-            };
-            btnCancel.FlatAppearance.BorderColor = C.Border;
-            btnCancel.FlatAppearance.MouseOverBackColor = C.CardHov;
-            btnCancel.Click += (s, e) => { DialogResult = DialogResult.Cancel; Close(); };
-
-            Controls.AddRange(new Control[] { header, lbl, txt, btnBrowse, btnOk, btnCancel });
-        }
-
-        protected override void OnResize(EventArgs e)
-        {
-            base.OnResize(e);
-            IntPtr ptr = CreateRoundRectRgn(0, 0, Width, Height, 12, 12);
-            Region = System.Drawing.Region.FromHrgn(ptr);
-            DeleteObject(ptr);
+            Controls.Add(lbl); Controls.Add(txt); Controls.Add(btnOk); Controls.Add(btnCancel);
         }
     }
 }

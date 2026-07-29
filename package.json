@@ -32,7 +32,8 @@
         "lint:fix": "pnpm lint --fix",
         "test": "pnpm buildStandalone && pnpm testTsc && pnpm lint && pnpm lint-styles && pnpm generatePluginJson",
         "testWeb": "pnpm lint && pnpm buildWeb && pnpm testTsc",
-        "testTsc": "tsc --noEmit"
+        "testTsc": "tsc --noEmit",
+        "release": "node scripts/uploadRelease.mjs"
     },
     "dependencies": {
         "@intrnl/xxhash64": "^0.1.2",
