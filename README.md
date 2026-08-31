@@ -8,7 +8,7 @@ Enhance your Discord experience with powerful plugins, themes, and privacy-focus
 
 [Website](https://endcord.com/) •
 [Download](https://endcord.com/) •
-[Discord Server](https://discord.gg/r9BaetEqAm)
+[Discord Server](https://discord.gg/endcord)
 
 </div>
 
@@ -58,7 +58,7 @@ Need help or want to report a bug?
 
 Join our Discord server:
 
-**https://discord.gg/r9BaetEqAm**
+**https://discord.gg/endcord**
 
 ---
 
