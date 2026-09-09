@@ -19,7 +19,6 @@ Enhance your Discord experience with powerful plugins, themes, and privacy-focus
 *  Easy installation
 *  **230+ built-in plugins**
 *  Lightweight and optimized
-*  Browser support via Extension or UserScript
 *  Supports every Discord branch
 
   * Stable
