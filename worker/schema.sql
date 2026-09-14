@@ -17,6 +17,14 @@ CREATE TABLE IF NOT EXISTS admin_badges (
     created_at INTEGER
 );
 
+CREATE TABLE IF NOT EXISTS badge_catalog (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    icon_url TEXT NOT NULL,
+    tooltip TEXT,
+    created_at INTEGER
+);
+
 CREATE TABLE IF NOT EXISTS app_updates (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     version TEXT NOT NULL,
@@ -27,6 +35,6 @@ CREATE TABLE IF NOT EXISTS app_updates (
     created_at INTEGER
 );
 
--- Insert initial version record
-INSERT INTO app_updates (version, min_version, release_notes, download_url, force_update, created_at)
-VALUES ('1.14.15', '1.0.0', 'Initial Endcord Cloudflare API Release', 'https://endcord.com/EndcordInstaller.exe', 0, 1726320000);
+-- Insert initial version record if not exists
+INSERT OR IGNORE INTO app_updates (id, version, min_version, release_notes, download_url, force_update, created_at)
+VALUES (1, '1.14.15', '1.0.0', 'Initial Endcord Cloudflare API Release', 'https://endcord.com/EndcordInstaller.exe', 0, 1726320000);
