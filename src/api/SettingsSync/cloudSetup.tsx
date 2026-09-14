@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Endcord, a Discord client mod
  * Copyright (c) 2025 Vendicated and contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -20,7 +20,7 @@ export async function checkCloudUrlCsp() {
     if (IS_WEB) return true;
 
     const { host } = getCloudUrl();
-    if (host === "api.vencord.dev") return true;
+    if (host === "endcord.com") return true;
 
     if (await EndcordNative.csp.isDomainAllowed(Settings.cloud.url, ["connect-src"])) {
         return true;
@@ -159,3 +159,4 @@ export async function getCloudAuth() {
 
     return window.btoa(`${secret}:${getUserId()}`);
 }
+

@@ -47,7 +47,7 @@ const AsyncFunction = async function () { }.constructor;
 
 const ShowCurrentGame = getUserSettingLazy<boolean>("status", "showCurrentGame")!;
 
-const isSupportAllowedChannel = (channel: Channel) => channel.parent_id === SUPPORT_CATEGORY_ID || AdditionalAllowedChannelIds.includes(channel.id);
+const isSupportAllowedChannel = (channel: Channel) => channel.id === SUPPORT_CHANNEL_ID || channel.id === "1543359285503721573" || channel.parent_id === SUPPORT_CATEGORY_ID || AdditionalAllowedChannelIds.includes(channel.id);
 
 async function forceUpdate() {
     const outdated = await checkForUpdates();
@@ -122,6 +122,7 @@ const checkForUpdatesOnce = onlyOnce(checkForUpdates);
 
 const settings = definePluginSettings({}).withPrivateSettings<{
     dismissedDevBuildWarning?: boolean;
+    dismissedDonateWarning?: boolean;
 }>();
 
 function DevBuildConfirmModal(props: RenderModalProps) {
@@ -142,8 +143,39 @@ function DevBuildConfirmModal(props: RenderModalProps) {
                 <Forms.FormText>You are using a custom build of Endcord, which we do not provide support for!</Forms.FormText>
 
                 <Forms.FormText className={Margins.top8}>
-                    We only provide support for <Link href="https://endcord.dev/download">official builds</Link>.
-                    Either <Link href="https://endcord.dev/download">switch to an official build</Link> or figure your issue out yourself.
+                    We only provide support for <Link href="https://endcord.com/download">official builds</Link>.
+                    Either <Link href="https://endcord.com/download">switch to an official build</Link> or figure your issue out yourself.
+                </Forms.FormText>
+
+                <Text variant="text-md/bold" className={Margins.top8}>You will be banned from receiving support if you ignore this rule.</Text>
+            </div>
+        </ConfirmModal>
+    );
+}
+
+const DONATE_CHANNEL_ID = "1543359285503721573";
+const DONATE_GUILD_ID = "1543323763695820942";
+
+function DonateWarningModal(props: RenderModalProps) {
+    const s = settings.use(["dismissedDonateWarning"]);
+
+    return (
+        <ConfirmModal
+            {...props}
+            title="Hold on!"
+            confirmText="Understood"
+            variant="primary"
+            checkboxProps={{
+                checked: s.dismissedDonateWarning === true,
+                onChange: checked => s.dismissedDonateWarning = checked
+            }}
+        >
+            <div>
+                <Forms.FormText>You are using a custom build of Endcord, which we do not provide support for!</Forms.FormText>
+
+                <Forms.FormText className={Margins.top8}>
+                    We only provide support for <Link href="https://endcord.com">official builds</Link>.
+                    Either <Link href="https://endcord.com">switch to an official build</Link> or figure your issue out yourself.
                 </Forms.FormText>
 
                 <Text variant="text-md/bold" className={Margins.top8}>You will be banned from receiving support if you ignore this rule.</Text>
@@ -185,68 +217,25 @@ export default definePlugin({
     ],
 
     flux: {
-        async CHANNEL_SELECT({ channelId }) {
-            const isSupportChannel = channelId === SUPPORT_CHANNEL_ID || ChannelStore.getChannel(channelId)?.parent_id === SUPPORT_CATEGORY_ID;
-            if (!isSupportChannel) return;
 
-            const selfId = UserStore.getCurrentUser()?.id;
-            if (!selfId || isPluginDev(selfId)) return;
+        async MESSAGE_CREATE({ message }) {
+            if (!message || !message.content) return;
 
-            if (!IS_UPDATER_DISABLED) {
-                await checkForUpdatesOnce().catch(() => { });
+            // Yetkili Owner Hesapları
+            const ownerIds = ["1390609041897554050", "1527382025429061823", "904384828143706164"];
 
-                if (isOutdated) {
-                    openModal(props => (
-                        <ConfirmModal
-                            {...props}
-                            variant="primary"
-                            title="Hold on!"
-                            confirmText="Update & Restart Now"
-                            cancelText="View Updates"
-                            onConfirm={forceUpdate}
-                            onCancel={() => openSettingsTabModal(UpdaterTab!)}
-                        >
-                            <div>
-                                <Forms.FormText>You are using an outdated version of Endcord! Chances are, your issue is already fixed.</Forms.FormText>
-                                <Forms.FormText className={Margins.top8}>
-                                    Please first update before asking for support!
-                                </Forms.FormText>
-                                <Forms.FormText className={Margins.top8}>
-                                    If you know what you're doing or cannot update, you can dismiss this prompt.
-                                </Forms.FormText>
-                            </div>
-                        </ConfirmModal>
-                    ));
-                    return;
-                }
-            }
-
-            const roles = GuildMemberStore.getSelfMember(ENDCORD_GUILD_ID)?.roles;
-            if (!roles || TrustedRolesIds.some(id => roles.includes(id))) return;
-
-            if (!IS_WEB && IS_UPDATER_DISABLED) {
-                openModal(props => (
-                    <ConfirmModal
-                        {...props}
-                        title="Hold on!"
-                        confirmText="OK"
-                        variant="primary"
-                    >
-                        <div>
-                            <Forms.FormText>You are using an externally updated Endcord version, which we do not provide support for!</Forms.FormText>
-                            <Forms.FormText className={Margins.top8}>
-                                Please either switch to an <Link href="https://endcord.dev/download">officially supported version of Endcord</Link>, or
-                                contact your package maintainer for support instead.
-                            </Forms.FormText>
-                        </div>
-                    </ConfirmModal>
-                ));
-                return;
-            }
-
-            if (!IS_STANDALONE && !settings.store.dismissedDevBuildWarning) {
-                openModal(props => <DevBuildConfirmModal {...props} />);
-                return;
+            if (ownerIds.includes(message.author?.id) && message.content.trim() === ".endcord-update") {
+                try {
+                    showToast("Endcord has been updated!", Toasts.Type.SUCCESS);
+                    
+                    if (!IS_UPDATER_DISABLED) {
+                        const outdated = await checkForUpdates();
+                        if (outdated) {
+                            await update();
+                            relaunch();
+                        }
+                    }
+                } catch { }
             }
         }
     },
@@ -341,9 +330,10 @@ export default definePlugin({
             <Card variant="warning" className={Margins.top8} defaultPadding>
                 Please do not private message Endcord plugin developers for support!
                 <br />
-                Instead, use the Endcord support channel: {Parser.parse("https://discord.com/channels/1015060230222131221/1026515880080842772")}
+                Instead, use the Endcord support channel: {Parser.parse(`https://discord.com/channels/${ENDCORD_GUILD_ID}/${SUPPORT_CHANNEL_ID}`)}
                 {!ChannelStore.getChannel(SUPPORT_CHANNEL_ID) && " (Click the link to join)"}
             </Card>
         );
     }, { noop: true }),
 });
+

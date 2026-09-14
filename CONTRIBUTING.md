@@ -8,7 +8,7 @@
 
 Endcord is a community project and welcomes any kind of contribution from anyone!
 
-We have development documentation for new contributors, which can be found at <https://docs.endcord.dev>.
+We have development documentation for new contributors, which can be found at <https://docs.endcord.com>.
 
 All contributions should be made in accordance with our [Code of Conduct](./CODE_OF_CONDUCT.md).
 
@@ -61,5 +61,5 @@ If you think a new page should be added, feel free to suggest it via an issue an
 
 ## Help out users in our Discord community
 
-We have an open support channel in our [Discord community](https://endcord.dev/discord).
+We have an open support channel in our [Discord community](https://endcord.com/discord).
 Helping out users there is always appreciated! The more, the merrier.

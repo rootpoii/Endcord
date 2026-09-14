@@ -8,7 +8,7 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { Channel, User } from "@endcord/discord-types";
 import { JSX } from "react";
 
-interface DecoratorProps {
+export interface DecoratorProps {
     type: "guild" | "dm";
     user: User;
     /** only present when this is a DM list item */

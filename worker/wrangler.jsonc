@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "endcord-api",
+  "main": "index.js",
+  "compatibility_date": "2024-09-01",
+  "observability": {
+    "enabled": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "endcord-db",
+      "database_id": "b0cf6865-1203-435a-b682-74e117ff1828"
+    }
+  ]
+}

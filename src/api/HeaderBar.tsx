@@ -5,6 +5,7 @@
  */
 
 import ErrorBoundary from "@components/ErrorBoundary";
+import { getIsEndcordHidden, onHiddenChange } from "@plugins/hideEndcord";
 import { Logger } from "@utils/Logger";
 import { classes } from "@utils/misc";
 import { findComponentByCodeLazy, findCssClassesLazy } from "@webpack";
@@ -209,8 +210,14 @@ function HeaderBarButtons() {
     useEffect(() => {
         const listener = () => forceUpdate(n => n + 1);
         headerBarListeners.add(listener);
-        return () => { headerBarListeners.delete(listener); };
+        const unSub = onHiddenChange(listener);
+        return () => {
+            headerBarListeners.delete(listener);
+            unSub();
+        };
     }, []);
+
+    if (getIsEndcordHidden()) return null;
 
     return Array.from(headerBarButtons)
         .sort(([, a], [, b]) => a.priority - b.priority)
@@ -227,8 +234,14 @@ function ChannelToolbarButtons() {
     useEffect(() => {
         const listener = () => forceUpdate(n => n + 1);
         channelToolbarListeners.add(listener);
-        return () => { channelToolbarListeners.delete(listener); };
+        const unSub = onHiddenChange(listener);
+        return () => {
+            channelToolbarListeners.delete(listener);
+            unSub();
+        };
     }, []);
+
+    if (getIsEndcordHidden()) return null;
 
     return Array.from(channelToolbarButtons)
         .sort(([, a], [, b]) => a.priority - b.priority)

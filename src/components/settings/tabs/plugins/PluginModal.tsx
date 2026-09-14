@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Endcord, a Discord client mod
  * Copyright (c) 2026 Vendicated and contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -171,7 +171,7 @@ export default function PluginModal({ plugin, onRestartNeeded, onClose, transiti
                         <div className="vc-settings-modal-links">
                             <WebsiteButton
                                 text="View more info"
-                                href={`https://endcord.dev/plugins/${plugin.name}`}
+                                href={`https://endcord.com/plugins/${plugin.name}`}
                             />
                         </div>
                     )}
@@ -244,3 +244,4 @@ export function openPluginModal(plugin: Plugin, onRestartNeeded?: (pluginName: s
         />
     ));
 }
+

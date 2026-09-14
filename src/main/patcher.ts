@@ -13,14 +13,59 @@ import { IS_VANILLA } from "./utils/constants";
 
 console.log("[Endcord] Starting up...");
 
+// Suppress Electron errors when loading Discord's original app.asar after app is ready
+try {
+    if (electron?.protocol?.registerSchemesAsPrivileged) {
+        const origReg = electron.protocol.registerSchemesAsPrivileged;
+        electron.protocol.registerSchemesAsPrivileged = function (...args) {
+            try {
+                return origReg.apply(this, args);
+            } catch { }
+        };
+    }
+    if (electron?.ipcMain?.handle) {
+        const origHandle = electron.ipcMain.handle;
+        electron.ipcMain.handle = function (channel: string, listener: any) {
+            try {
+                return origHandle.call(this, channel, listener);
+            } catch (err: any) {
+                if (err?.message?.includes("second handler")) {
+                    try {
+                        this.removeHandler(channel);
+                        return origHandle.call(this, channel, listener);
+                    } catch { }
+                } else {
+                    throw err;
+                }
+            }
+        };
+    }
+    if (app) {
+        const origIsReady = app.isReady;
+        app.isReady = () => false;
+        setTimeout(() => {
+            try { app.isReady = origIsReady; } catch { }
+        }, 1000);
+    }
+} catch { }
+
+import { existsSync } from "fs";
+
 // Our injector file at app/index.js
 const injectorPath = require.main!.filename;
 
-// special discord_arch_electron injection method
-const asarName = require.main!.path.endsWith("app.asar") ? "_app.asar" : "app.asar";
-
 // The original app.asar
-const asarPath = join(dirname(injectorPath), "..", asarName);
+const resPath = process.resourcesPath || join(dirname(injectorPath), "..", "..");
+let asarPath = join(resPath, "_app.asar");
+if (!existsSync(asarPath)) {
+    asarPath = join(resPath, "app.asar");
+}
+if (!existsSync(asarPath)) {
+    asarPath = join(dirname(injectorPath), "..", "_app.asar");
+    if (!existsSync(asarPath)) {
+        asarPath = join(dirname(injectorPath), "..", "app.asar");
+    }
+}
 
 const discordPkg = require(join(asarPath, "package.json"));
 require.main!.filename = join(asarPath, discordPkg.main);
@@ -56,7 +101,7 @@ if (!IS_VANILLA) {
 
     class BrowserWindow extends electron.BrowserWindow {
         constructor(options: BrowserWindowConstructorOptions) {
-            if (!options?.webPreferences?.preload || !options.title) {
+            if (!options?.webPreferences?.preload) {
                 super(options);
                 return;
             }

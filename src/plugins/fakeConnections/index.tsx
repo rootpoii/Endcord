@@ -314,13 +314,33 @@ const settings = definePluginSettings({
     }
 });
 
+const profilePopoutComponent = ErrorBoundary.wrap(
+    (props: { user?: { id: string }; displayProfile?: any; [key: string]: any; }) => {
+        const uid = props.user?.id || props.displayProfile?.userId;
+        if (!uid) return null;
+        return <ConnectionsSection userId={uid} isSideBar={false} />;
+    },
+    { noop: true }
+);
+
 export default definePlugin({
     name: "FakeConnections",
     description: "Add fake connections to your own profile, visible only to you. Supports custom display names, optional clickable links, and per-theme text color. Manage in plugin settings.",
     authors: [EndcordDevs.lastclipped],
     tags: ["Appearance", "Customisation"],
-    dependencies: ["ProfileSectionsAPI"],
     settings,
+
+    patches: [
+        {
+            find: '"UserProfilePopout");',
+            replacement: {
+                match: /userId:\i\.id,guild:\i\}\)(?=])/,
+                replace: "$&,$self.profilePopoutComponent(arguments[0])"
+            }
+        }
+    ],
+
+    profilePopoutComponent,
 
     renderProfileSection: {
         render: ConnectionsSection,

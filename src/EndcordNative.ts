@@ -21,7 +21,7 @@ export function sendSync<T = any>(event: IpcEvents, ...args: any[]) {
 }
 
 const PluginHelpers = {} as Record<string, Record<string, (...args: any[]) => Promise<any>>>;
-const pluginIpcMap = sendSync<PluginIpcMappings>(IpcEvents.GET_PLUGIN_IPC_METHOD_MAP);
+const pluginIpcMap = sendSync<PluginIpcMappings>(IpcEvents.GET_PLUGIN_IPC_METHOD_MAP) || {};
 
 for (const [plugin, methods] of Object.entries(pluginIpcMap)) {
     const map = PluginHelpers[plugin] = {};
@@ -100,5 +100,6 @@ export default {
             invoke<CspRequestResult>(IpcEvents.CSP_REQUEST_ADD_OVERRIDE, url, directives, callerName),
     },
 
-    pluginHelpers: PluginHelpers
+    pluginHelpers: PluginHelpers,
+    fetchProfiles: (url: string, options?: any) => invoke<{ ok: boolean; status: number; text?: string; error?: string; }>(IpcEvents.FETCH_PROFILES, url, options),
 };

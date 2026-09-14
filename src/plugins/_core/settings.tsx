@@ -15,6 +15,7 @@ import { React } from "@webpack/common";
 import type { ComponentType, PropsWithChildren, ReactNode } from "react";
 
 import gitHash from "~git-hash";
+import { getIsEndcordHidden } from "../hideEndcord";
 
 let LayoutTypes = {
     SECTION: 1,
@@ -153,6 +154,7 @@ export default definePlugin({
         if (!Array.isArray(layout)) return layout;
 
         if (layout.some(s => s?.key === "endcord_section")) return layout;
+        if (getIsEndcordHidden()) return layout;
 
         const { buildEntry } = this;
 

@@ -10,7 +10,7 @@ import "./settings";
 
 import { debounce } from "@shared/debounce";
 import { IpcEvents } from "@shared/IpcEvents";
-import { BrowserWindow, ipcMain, nativeTheme, shell, systemPreferences } from "electron";
+import { BrowserWindow, ipcMain, nativeTheme, net, shell, systemPreferences } from "electron";
 import monacoHtml from "file://monacoWin.html?minify&base64";
 import { FSWatcher, mkdirSync, readFileSync, watch, writeFileSync } from "fs";
 import { open, readdir, readFile } from "fs/promises";
@@ -159,6 +159,25 @@ ipcMain.handle(IpcEvents.OPEN_MONACO_EDITOR, async () => {
 });
 
 ipcMain.handle(IpcEvents.GET_RENDERER_CSS, () => readFile(RENDERER_CSS_PATH, "utf-8"));
+
+ipcMain.handle(IpcEvents.FETCH_PROFILES, async (_, url, options) => {
+    try {
+        const res = await net.fetch(url, {
+            ...options,
+            cache: "no-store"
+        });
+        return {
+            ok: res.ok,
+            status: res.status,
+            text: await res.text()
+        };
+    } catch (err: any) {
+        return {
+            ok: false,
+            error: err.message || String(err)
+        };
+    }
+});
 
 if (IS_DISCORD_DESKTOP) {
     ipcMain.on(IpcEvents.PRELOAD_GET_RENDERER_JS, e => {

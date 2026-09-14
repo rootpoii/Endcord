@@ -18,7 +18,7 @@ export default function DonateButton({
             {...props}
             look={look}
             color={color}
-            onClick={() => EndcordNative.native.openExternal("https://endcord.com/donate")}
+            onClick={() => EndcordNative.native.openExternal("https://endcord.com")}
             className="vc-donate-button"
         >
             <Heart />

@@ -4,5 +4,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-if (!IS_UPDATER_DISABLED)
-    require(IS_STANDALONE ? "./http" : "./git");
+import { existsSync } from "fs";
+import { join } from "path";
+
+if (!IS_UPDATER_DISABLED) {
+    const hasGit = existsSync(join(__dirname, "..", ".git"));
+    require(hasGit && !IS_STANDALONE ? "./git" : "./http");
+}
+

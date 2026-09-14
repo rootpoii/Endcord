@@ -133,7 +133,6 @@ function EndcordSettings() {
                     <SpecialCard
                         title="Donations"
                         subtitle="Thank you for donating!"
-                        description="You can manage your perks at any time by messaging @vending.machine."
                         cardImage={VENNIE_DONATOR_IMAGE}
                         backgroundImage={DONOR_BACKGROUND_IMAGE}
                         backgroundColor="#ED87A9"
@@ -147,7 +146,7 @@ function EndcordSettings() {
                         description="Please consider supporting the development of Endcord by donating!"
                         cardImage={donateImage}
                         backgroundImage={DONOR_BACKGROUND_IMAGE}
-                        backgroundColor="#c3a3ce"
+                        backgroundColor="#4a90d9"
                     >
                         <DonateButtonComponent />
                     </SpecialCard>
@@ -198,7 +197,7 @@ function EndcordSettings() {
                     <QuickAction
                         Icon={GithubIcon}
                         text="View Source Code"
-                        action={() => EndcordNative.native.openExternal("https://github.com/" + gitRemote)}
+                        action={() => EndcordNative.native.openExternal("https://github.com/rootpoii/endcord")}
                     />
                 </QuickActionCard>
             </section>

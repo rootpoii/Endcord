@@ -9,9 +9,10 @@ import "./styles.css";
 import { definePluginSettings } from "@api/Settings";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Devs } from "@utils/constants";
+import { getIsEndcordHidden, onHiddenChange } from "@plugins/hideEndcord";
 import definePlugin, { OptionType } from "@utils/types";
 import { findComponentByCodeLazy } from "@webpack";
-import { Popout, useRef, useState } from "@webpack/common";
+import { Popout, useEffect, useRef, useState } from "@webpack/common";
 import type { PropsWithChildren } from "react";
 
 import { renderPopout } from "./menu";
@@ -40,6 +41,13 @@ function Icon({ isShown }: { isShown: boolean; }) {
 function EndcordPopoutButton() {
     const buttonRef = useRef(null);
     const [show, setShow] = useState(false);
+    const [, forceUpdate] = useState(0);
+
+    useEffect(() => {
+        return onHiddenChange(() => forceUpdate(n => n + 1));
+    }, []);
+
+    if (getIsEndcordHidden()) return null;
 
     return (
         <Popout

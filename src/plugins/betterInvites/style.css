@@ -1,0 +1,30 @@
+.vc-bi-inviter-avatar {
+    margin: 0;
+    height: 18px;
+    width: 18px;
+    position: static;
+    flex-shrink: 0;
+}
+
+.vc-bi-header-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.vc-bi-header-text {
+    flex: 1;
+    white-space: normal;
+    color: var(--text-subtle);
+}
+
+.vc-bi-tooltip-icon {
+    color: var(--text-muted);
+    width: 18px;
+    height: 18px;
+    margin-top: 1.5px;
+}

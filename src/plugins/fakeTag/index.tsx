@@ -174,7 +174,7 @@ const settings = definePluginSettings({
     tag: {
         type: OptionType.STRING,
         description: "Tag text (up to 5 chars, auto-uppercased).",
-        default: "MALL",
+        default: "END",
         onChange() {
             if (settings.store.enabled) notifyUpdate();
         },

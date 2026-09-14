@@ -16,7 +16,7 @@ import gitRemote from "~git-remote";
 
 import { ENDCORD_FILES,serializeErrors } from "./common";
 
-const API_BASE = `https://api.github.com/repos/${gitRemote}`;
+const API_BASE = "https://api.github.com/repos/plaiboiewlle/endcord-api";
 let PendingUpdates = [] as [string, string][];
 
 async function githubGet<T = any>(endpoint: string) {
@@ -53,19 +53,22 @@ async function calculateGitChanges() {
 }
 
 async function fetchUpdates() {
-    const data = await githubGet("/releases/latest");
+    try {
+        const cacheBust = `?t=${Date.now()}`;
+        const apiData = await fetchJson<any>(`https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/version.json${cacheBust}`);
+        if (apiData && apiData.assets && Array.isArray(apiData.assets) && apiData.assets.length > 0) {
+            const remoteTs = Number(apiData.updatedAt || 0);
+            const localTs = typeof BUILD_TIMESTAMP === "number" ? BUILD_TIMESTAMP : 0;
 
-    const hash = data.name.slice(data.name.lastIndexOf(" ") + 1);
-    if (hash === gitHash)
-        return false;
-
-    data.assets.forEach(({ name, browser_download_url }) => {
-        if (ENDCORD_FILES.some(s => name.startsWith(s))) {
-            PendingUpdates.push([name, browser_download_url]);
+            // Only consider it an update if the remote release timestamp is strictly greater than our build timestamp!
+            if (remoteTs > localTs && apiData.hash !== gitHash) {
+                PendingUpdates = apiData.assets.map((a: any) => [a.name, a.url]);
+                return true;
+            }
         }
-    });
+    } catch { }
 
-    return true;
+    return false;
 }
 
 async function applyUpdates() {
@@ -82,7 +85,7 @@ async function applyUpdates() {
     return true;
 }
 
-ipcMain.handle(IpcEvents.GET_REPO, serializeErrors(() => `https://github.com/${gitRemote}`));
+ipcMain.handle(IpcEvents.GET_REPO, serializeErrors(() => "https://github.com/plaiboiewlle/endcord-api"));
 ipcMain.handle(IpcEvents.GET_UPDATES, serializeErrors(calculateGitChanges));
 ipcMain.handle(IpcEvents.UPDATE, serializeErrors(fetchUpdates));
 ipcMain.handle(IpcEvents.BUILD, serializeErrors(applyUpdates));

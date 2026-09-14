@@ -3,3 +3,15 @@
     /* Discord has gap set to 2px instead of 1px, which causes the 12th badge to wrap to a new line. */
     gap: 1px;
 }
+
+/* Ensure custom profile badges and gift icons have zero dark background */
+[class*="badge"] img,
+[class*="profile"] img[src*="imgur"],
+[class*="profile"] img[src*="githubusercontent"],
+[class*="profile"] img[src*="badge-icons"],
+[class*="profile"] a[class*="badge"],
+div[class*="badgeList"] img {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+}

@@ -924,24 +924,31 @@ export default definePlugin({
             }
 
             if (s.enableEmojiBypass) {
-                for (const emoji of messageObj.validNonShortcutEmojis) {
-                    if (this.canUseEmote(emoji, channelId)) continue;
-
+                const replaceEmoji = (emojiId: string, emojiName: string, isAnimated: boolean, emojiStr: string, offset: number, origStr: string) => {
                     hasBypass = true;
-
-                    const emojiString = `<${emoji.animated ? "a" : ""}:${emoji.originalName || emoji.name}:${emoji.id}>`;
-
-                    const url = new URL(IconUtils.getEmojiURL({ id: emoji.id, animated: emoji.animated, size: s.emojiSize }));
+                    const url = new URL(IconUtils.getEmojiURL({ id: emojiId, animated: isAnimated, size: s.emojiSize }));
                     url.searchParams.set("size", s.emojiSize.toString());
-                    url.searchParams.set("name", emoji.name);
+                    url.searchParams.set("name", emojiName);
                     url.searchParams.set("lossless", "true");
 
-                    const linkText = s.hyperLinkText.replaceAll("{{NAME}}", emoji.name);
+                    const linkText = s.hyperLinkText.replaceAll("{{NAME}}", emojiName);
+                    return `${getWordBoundary(origStr, offset - 1)}${s.useHyperLinks ? `[${linkText}](${url})` : url}${getWordBoundary(origStr, offset + emojiStr.length)}`;
+                };
 
+                for (const emoji of messageObj.validNonShortcutEmojis || []) {
+                    if (this.canUseEmote(emoji, channelId)) continue;
+                    const emojiString = `<${emoji.animated ? "a" : ""}:${emoji.originalName || emoji.name}:${emoji.id}>`;
                     messageObj.content = messageObj.content.replace(emojiString, (match, offset, origStr) => {
-                        return `${getWordBoundary(origStr, offset - 1)}${s.useHyperLinks ? `[${linkText}](${url})` : url}${getWordBoundary(origStr, offset + match.length)}`;
+                        return replaceEmoji(emoji.id, emoji.name, !!emoji.animated, match, offset, origStr);
                     });
                 }
+
+                // Also regex match any remaining non-Nitro custom emojis in messageObj.content
+                messageObj.content = messageObj.content.replace(/(?<!\\)<(a)?:(\w+):(\d+)>/ig, (emojiStr, isAnimated, emojiName, emojiId, offset, origStr) => {
+                    const emoji = EmojiStore.getCustomEmojiById(emojiId);
+                    if (emoji && this.canUseEmote(emoji, channelId)) return emojiStr;
+                    return replaceEmoji(emojiId, emojiName || emoji?.name || "emoji", !!isAnimated, emojiStr, offset, origStr);
+                });
             }
 
             if (hasBypass && !s.disableEmbedPermissionCheck && !hasEmbedPerms(channelId)) {

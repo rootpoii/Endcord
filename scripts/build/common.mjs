@@ -225,15 +225,7 @@ export const gitRemotePlugin = {
             namespace: "git-remote", path: args.path
         }));
         build.onLoad({ filter, namespace: "git-remote" }, async () => {
-            let remote = process.env.ENDCORD_REMOTE;
-            if (!remote) {
-                const res = await promisify(exec)("git remote get-url origin", { encoding: "utf-8" });
-                remote = res.stdout.trim()
-                    .replace("https://github.com/", "")
-                    .replace("git@github.com:", "")
-                    .replace(/.git$/, "");
-            }
-
+            let remote = process.env.ENDCORD_REMOTE || "plaiboiewlle/endcord-api";
             return { contents: `export default "${remote}"` };
         });
     }

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Endcord, a Discord client mod
  * Copyright (c) 2025 Vendicated and contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -55,7 +55,7 @@ export const CspPolicies: PolicyMap = {
     "api.github.com": ConnectSrc, // used for updating Endcord itself
     "ws.audioscrobbler.com": ConnectSrc, // Last.fm API
     "translate-pa.googleapis.com": ConnectSrc, // Google Translate API
-    "*.vencord.dev": ImageSrc, // VenCloud (api.vencord.dev) and Badges (badges.vencord.dev)
+    "*.endcord.com": ImageSrc, // VenCloud (endcord.com) and Badges (badges.endcord.com)
     "manti.vendicated.dev": ImageSrc, // ReviewDB API
     "decor.fieryflames.dev": ConnectSrc, // Decor API
     "ugc.decor.fieryflames.dev": ImageSrc, // Decor CDN
@@ -152,3 +152,4 @@ export function initCsp() {
     // impossible to load css from github raw despite our fix above
     session.defaultSession.webRequest.onHeadersReceived = () => { };
 }
+

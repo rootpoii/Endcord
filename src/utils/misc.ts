@@ -59,16 +59,17 @@ export const checkIntersecting = (el: Element) => {
     return !(elementBox.bottom < 0 || elementBox.top - documentHeight >= 0);
 };
 
+export const isPluginDev = (id: string) => Object.hasOwn(DevsById, id);
+
 export function identity<T>(value: T): T {
     return value;
 }
 
-export const isPluginDev = (id: string) => Object.hasOwn(DevsById, id);
-export const shouldShowContributorBadge = (id: string) => isPluginDev(id) && DevsById[id].badge !== false;
 
 export function pluralise(amount: number, singular: string, plural = singular + "s") {
     return amount === 1 ? `${amount} ${singular}` : `${amount} ${plural}`;
 }
+export const pluralize = pluralise;
 
 export function interpolateIfDefined(strings: TemplateStringsArray, ...args: any[]) {
     if (args.some(arg => arg == null)) return "";

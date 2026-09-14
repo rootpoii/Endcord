@@ -11,10 +11,51 @@ import { openPluginModal, openSettingsTabModal, PluginsTab, ThemesTab } from "@c
 import { useAwaiter } from "@utils/react";
 import { wordsFromCamel, wordsToTitle } from "@utils/text";
 import { OptionType, Plugin } from "@utils/types";
-import { Menu, showToast, useMemo, useState } from "@webpack/common";
+import { Menu, showToast, Toasts, useMemo, useState } from "@webpack/common";
 import type { ReactNode } from "react";
 
 import { settings } from ".";
+
+const ENDCORD_VERSION_URL = "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/version.json";
+const LS_LAST_SEEN_UPDATE = "endcord_last_seen_updatedAt";
+let _updateAvailable = false;
+let _latestVersion = "";
+let _latestUrl = "";
+
+async function checkForUpdates(showToastIfNew = false) {
+    try {
+        const res = await fetch(`${ENDCORD_VERSION_URL}?t=${Date.now()}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const latestTs: number = data.updatedAt ?? 0;
+        const latestVersion: string = data.version ?? "";
+        const seenTs = Number(localStorage.getItem(LS_LAST_SEEN_UPDATE) ?? "0");
+
+        _latestVersion = latestVersion;
+        _latestUrl = data.downloadUrl ?? "";
+
+        const localTs: number = typeof BUILD_TIMESTAMP === "number" ? BUILD_TIMESTAMP : 0;
+        if (latestTs > localTs && latestTs > seenTs) {
+            _updateAvailable = true;
+            if (showToastIfNew) {
+                Toasts.show({
+                    id: "endcord-update-available",
+                    message: `🔔 Endcord güncellemesi mevcut! (${latestVersion}) — Toolbox > Güncellemeyi Uygula`,
+                    type: Toasts.Type.MESSAGE,
+                    options: { duration: 8000 }
+                });
+            }
+        } else {
+            _updateAvailable = false;
+        }
+    } catch { }
+}
+
+// Check on startup after 5 seconds, then every 30 minutes
+setTimeout(() => checkForUpdates(true), 5000);
+setInterval(() => checkForUpdates(true), 30 * 60 * 1000);
+
+
 
 function buildPluginMenu() {
     const { showPluginMenu } = settings.use(["showPluginMenu"]);
@@ -297,11 +338,65 @@ function buildCustomPluginEntries() {
 }
 
 export function renderPopout(onClose: () => void) {
+    const [updateAvailable, setUpdateAvailable] = useState(_updateAvailable);
+
     return (
         <Menu.Menu
             navId="vc-toolbox"
             onClose={onClose}
         >
+            {updateAvailable && (
+                <Menu.MenuGroup label={`🔔 Update Available! (${_latestVersion})`}>
+                    <Menu.MenuItem
+                        id="endcord-apply-update"
+                        label="✅ Acknowledge Update (applied on restart)"
+                        action={() => {
+                            localStorage.setItem(LS_LAST_SEEN_UPDATE, String(Date.now()));
+                            _updateAvailable = false;
+                            setUpdateAvailable(false);
+                            Toasts.show({
+                                id: "endcord-update-ack",
+                                message: "Update acknowledged! Restart Discord to apply.",
+                                type: Toasts.Type.SUCCESS
+                            });
+                            onClose();
+                        }}
+                    />
+                    <Menu.MenuItem
+                        id="endcord-check-update"
+                        label="🔄 Check for Updates Now"
+                        action={async () => {
+                            await checkForUpdates(false);
+                            setUpdateAvailable(_updateAvailable);
+                            Toasts.show({
+                                id: "endcord-check-done",
+                                message: _updateAvailable
+                                    ? `New version available: ${_latestVersion}`
+                                    : "Endcord is up to date! ✅",
+                                type: _updateAvailable ? Toasts.Type.MESSAGE : Toasts.Type.SUCCESS
+                            });
+                        }}
+                    />
+                </Menu.MenuGroup>
+            )}
+            {!updateAvailable && (
+                <Menu.MenuItem
+                    id="endcord-check-update-idle"
+                    label={`🔄 Check for Updates`}
+                    action={async () => {
+                        await checkForUpdates(false);
+                        setUpdateAvailable(_updateAvailable);
+                        Toasts.show({
+                            id: "endcord-check-done",
+                            message: _updateAvailable
+                                ? `🔔 New version available: ${_latestVersion}`
+                                : "Endcord is up to date! ✅",
+                            type: _updateAvailable ? Toasts.Type.MESSAGE : Toasts.Type.SUCCESS
+                        });
+                    }}
+                />
+            )}
+
             <Menu.MenuItem
                 id="notifications"
                 label="Open Notification Log"

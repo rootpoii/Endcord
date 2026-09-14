@@ -62,8 +62,8 @@ function CloudSetupSection() {
 
             <Paragraph size="md" className={Margins.bottom20}>
                 Endcord comes with a cloud integration that adds goodies like settings sync across devices.
-                It <Link href="https://endcord.dev/cloud/privacy">respects your privacy</Link>, and
-                the <Link href="https://github.com/Endcord/Backend">source code</Link> is AGPL 3.0 licensed so you
+                It <Link href="https://endcord.com/cloud/privacy">respects your privacy</Link>, and
+                the <Link href="https://github.com/rootpoii/endcord">source code</Link> is AGPL 3.0 licensed so you
                 can host it yourself.
             </Paragraph>
             <FormSwitch
@@ -250,3 +250,4 @@ function CloudTab() {
 }
 
 export default wrapTab(CloudTab, "Cloud");
+

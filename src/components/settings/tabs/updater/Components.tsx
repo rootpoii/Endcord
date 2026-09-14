@@ -23,7 +23,7 @@ export interface CommonProps {
 
 export function HashLink({ repo, hash, disabled = false }: { repo: string, hash: string, disabled?: boolean; }) {
     return (
-        <Link href={`${repo}/commit/${hash}`} disabled={disabled}>
+        <Link href={repo} disabled={disabled}>
             {hash}
         </Link>
     );

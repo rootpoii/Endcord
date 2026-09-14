@@ -119,13 +119,36 @@ function stopBlink() {
     blinkTimer = setTimeout(startBlink, 1000);
 }
 
+// Track RAF to prevent stacking multiple RAF calls
+let rafPending = false;
+
+function scheduleCaretUpdate() {
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(() => {
+        rafPending = false;
+        applyCaretPosition();
+    });
+}
+
+// Flag to prevent mutation observer from re-triggering on our own caret style changes
+let updatingCaret = false;
+
 function applyCaretPosition() {
     const el = getCaret();
     if (!document.activeElement?.closest("[data-slate-editor]")) {
-        el.style.display = "none"; return;
+        updatingCaret = true;
+        el.style.display = "none";
+        updatingCaret = false;
+        return;
     }
     const sel = window.getSelection();
-    if (!sel?.rangeCount) { el.style.display = "none"; return; }
+    if (!sel?.rangeCount) {
+        updatingCaret = true;
+        el.style.display = "none";
+        updatingCaret = false;
+        return;
+    }
     const range = sel.getRangeAt(0).cloneRange();
     range.collapse(false);
     const rects = range.getClientRects();
@@ -135,36 +158,76 @@ function applyCaretPosition() {
         const parent = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node) as HTMLElement | null;
         if (parent) rect = parent.getBoundingClientRect();
     }
-    if (!rect || rect.height === 0) { el.style.display = "none"; return; }
+    if (!rect || rect.height === 0) {
+        updatingCaret = true;
+        el.style.display = "none";
+        updatingCaret = false;
+        return;
+    }
     const newLeft = rect.right + "px";
     const newTop = rect.top + "px";
+    const newHeight = rect.height + "px";
+    updatingCaret = true;
     if (el.style.left !== newLeft || el.style.top !== newTop) {
         if (el.style.display !== "none") stopBlink();
     }
     el.style.display = "block";
     el.style.left = newLeft;
-    el.style.top = rect.top + "px";
-    el.style.height = rect.height + "px";
+    el.style.top = newTop;
+    el.style.height = newHeight;
+    updatingCaret = false;
 }
 
+// Observe only the active Slate editor container, not the whole document.body.
+// This avoids the infinite mutation loop caused by updating caret element styles.
 let observer: MutationObserver | null = null;
+let observedEditor: Element | null = null;
+
+function getActiveSlateEditor(): Element | null {
+    return document.activeElement?.closest("[data-slate-editor]") ?? null;
+}
 
 function startObserver() {
-    observer = new MutationObserver(() => applyCaretPosition());
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer = new MutationObserver(() => {
+        // Skip if we are the ones making the DOM change (caret style update)
+        if (updatingCaret) return;
+        scheduleCaretUpdate();
+    });
+}
+
+function observeEditor(editor: Element) {
+    if (observedEditor === editor) return;
+    observer?.disconnect();
+    observedEditor = editor;
+    observer?.observe(editor, { childList: true, subtree: true, characterData: true });
 }
 
 function stopObserver() {
     observer?.disconnect();
     observer = null;
+    observedEditor = null;
 }
 
 const handlers = {
-    sel: () => applyCaretPosition(),
-    focus: () => applyCaretPosition(),
-    blur: () => { getCaret().style.display = "none"; },
-    key: () => applyCaretPosition(),
-    click: () => applyCaretPosition(),
+    sel: () => {
+        const editor = getActiveSlateEditor();
+        if (editor) observeEditor(editor);
+        scheduleCaretUpdate();
+    },
+    focus: () => {
+        const editor = getActiveSlateEditor();
+        if (editor) observeEditor(editor);
+        scheduleCaretUpdate();
+    },
+    blur: () => {
+        observer?.disconnect();
+        observedEditor = null;
+        updatingCaret = true;
+        getCaret().style.display = "none";
+        updatingCaret = false;
+    },
+    key: () => scheduleCaretUpdate(),
+    click: () => scheduleCaretUpdate(),
 };
 
 function startListeners() {
@@ -214,5 +277,6 @@ export default definePlugin({
         removeCSS();
         if (blinkTimer) clearTimeout(blinkTimer);
         document.getElementById("vc-smoothtype-caret")?.remove();
+        rafPending = false;
     },
 });
