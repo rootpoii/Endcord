@@ -5,7 +5,7 @@
 
 const ADMIN_SECRET = "ec_sec_f24b417136199503edf4cd5289caa6d0a2a3277d66105ada4bf72663185066a4";
 
-// ── Rate Limiting (Brute Force Guard) ──
+// ── Rate Limiting (Brute Force Protection) ──
 const rateLimitMap = new Map();
 function checkRateLimit(ip) {
     const now = Date.now();
@@ -157,7 +157,15 @@ export default {
             // ── Management Console Endpoints ──
             if (path.startsWith("/admin")) {
                 if (method === "GET" && (path === "/admin" || path === "/admin/")) {
-                    return new Response(renderConsoleHtml(), { headers: { "Content-Type": "text/html; charset=utf-8", ...CORS_HEADERS } });
+                    return new Response(renderConsoleHtml(), {
+                        headers: {
+                            "Content-Type": "text/html; charset=utf-8",
+                            "Cache-Control": "no-cache, no-store, must-revalidate",
+                            "Pragma": "no-cache",
+                            "Expires": "0",
+                            ...CORS_HEADERS
+                        }
+                    });
                 }
 
                 // Brute Force Guard
@@ -165,7 +173,9 @@ export default {
                     return json({ error: "Rate limit exceeded. Too many failed attempts. Try again in 60s." }, 429);
                 }
 
-                const auth = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "").trim() || request.headers.get("X-Admin-Secret");
+                const rawAuth = request.headers.get("Authorization") || request.headers.get("X-Admin-Secret") || url.searchParams.get("secret") || "";
+                const auth = rawAuth.replace(/^Bearer\s+/i, "").replace(/[^\x20-\x7E]/g, "").trim();
+
                 if (auth !== ADMIN_SECRET) {
                     recordFail(clientIP);
                     return json({ error: "Unauthorized: Invalid administrative credentials" }, 401);
@@ -223,7 +233,7 @@ export default {
                     const uid = path.split("/").pop();
                     const [user, badges] = await Promise.all([
                         db.prepare("SELECT * FROM users WHERE user_id = ?").bind(uid).first(),
-                        db.prepare("SELECT * FROM admin_badges WHERE user_id = ?").bind(uid).all()
+                        db.prepare("SELECT id, badge_url, tooltip, badge_type FROM admin_badges WHERE user_id = ?").bind(uid).all()
                     ]);
                     let parsedBadges = [];
                     if (user?.badges) {
@@ -337,7 +347,7 @@ export default {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-// ULTRA-MODERN HIGH-TECH MANAGEMENT CONSOLE (ZERO EMOJIS, VECTOR ICONS)
+// ZERO-EMOJI HIGH-TECH CONSOLE (LINEAR / VERCEL CALIBER)
 // ══════════════════════════════════════════════════════════════════════════
 function renderConsoleHtml() {
     return `<!DOCTYPE html>
@@ -349,11 +359,11 @@ function renderConsoleHtml() {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; background-color: #07090e; }
+        body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; background-color: #06080d; }
         code, .mono { font-family: 'JetBrains Mono', monospace; }
-        .surface-panel { background: rgba(13, 16, 24, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.06); }
-        .surface-card { background: rgba(19, 24, 38, 0.5); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        .surface-card:hover { border-color: rgba(99, 102, 241, 0.25); }
+        .surface-panel { background: rgba(11, 14, 22, 0.85); backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.07); }
+        .surface-card { background: rgba(16, 21, 34, 0.6); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .surface-card:hover { border-color: rgba(99, 102, 241, 0.3); }
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 4px; }
@@ -363,24 +373,26 @@ function renderConsoleHtml() {
 <body class="text-slate-200 min-h-screen selection:bg-indigo-500/30 selection:text-indigo-200">
 
     <!-- LOGIN SCREEN -->
-    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-[#07090e]/95 backdrop-blur-2xl p-4">
+    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-[#06080d]/95 backdrop-blur-3xl p-4">
         <div class="surface-panel w-full max-w-md rounded-2xl p-8 border border-white/[0.08] shadow-2xl relative overflow-hidden">
             <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
             <div class="flex items-center gap-3 mb-6">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-700 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/20">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <div class="w-11 h-11 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9"/></svg>
                 </div>
                 <div>
-                    <h1 class="text-lg font-bold text-white tracking-tight">Endcord Console</h1>
-                    <p class="text-xs text-slate-400">Cloudflare Edge Architecture</p>
+                    <h1 class="text-base font-bold text-white tracking-tight">Endcord Engine</h1>
+                    <p class="text-xs text-slate-400">Administrative Console</p>
                 </div>
             </div>
+
             <div class="space-y-4">
                 <div>
-                    <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Master Authentication Secret</label>
-                    <input id="key-input" type="password" placeholder="ec_sec_..." class="w-full px-4 py-3 rounded-xl bg-[#0b0e17] border border-white/[0.08] text-white text-sm focus:outline-none focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/40 transition">
+                    <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Master Authorization Key</label>
+                    <input id="key-input" type="password" placeholder="ec_sec_..." autocomplete="off" class="w-full px-4 py-3 rounded-xl bg-[#090b12] border border-white/[0.08] text-white text-sm focus:outline-none focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/40 transition">
                 </div>
-                <button onclick="login()" class="w-full py-3 rounded-xl bg-white text-black hover:bg-slate-200 font-semibold text-sm transition shadow-sm">Authorize Session</button>
+                <button onclick="login()" class="w-full py-3 rounded-xl bg-white text-black hover:bg-slate-200 font-semibold text-xs tracking-wider uppercase transition shadow-sm">Authorize Session</button>
                 <div id="login-err" class="text-rose-400 text-xs text-center hidden pt-1"></div>
             </div>
         </div>
@@ -392,21 +404,21 @@ function renderConsoleHtml() {
         <!-- SIDEBAR NAVIGATION -->
         <aside class="w-full md:w-64 surface-panel border-b md:border-b-0 md:border-r border-white/[0.06] p-5 flex flex-col justify-between shrink-0">
             <div>
-                <!-- Brand -->
+                <!-- Brand Header -->
                 <div class="flex items-center gap-3 pb-6 border-b border-white/[0.06] mb-6">
-                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-700 flex items-center justify-center text-white shadow-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <div class="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9"/></svg>
                     </div>
                     <div>
                         <span class="font-bold text-white text-sm tracking-tight block">Endcord Engine</span>
                         <div class="flex items-center gap-1.5 mt-0.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                             <span class="text-[10px] font-medium text-slate-400">D1 Edge Active</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Navigation List -->
+                <!-- Nav Menu -->
                 <nav class="space-y-1">
                     <button onclick="tab('overview')" id="btn-overview" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition bg-white/[0.06] text-white border border-white/[0.08]">
                         <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
@@ -446,7 +458,7 @@ function renderConsoleHtml() {
                 </nav>
             </div>
 
-            <!-- Footer -->
+            <!-- Footer Signout -->
             <div class="pt-6 border-t border-white/[0.06]">
                 <button onclick="logout()" class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-rose-400 hover:bg-rose-500/[0.05] transition border border-white/[0.04]">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
@@ -622,7 +634,7 @@ function renderConsoleHtml() {
                         <span id="catalog-total" class="text-xs font-mono text-slate-400">0 badges</span>
                     </div>
                     <div id="catalog-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                        <div class="text-slate-500 text-xs py-6 col-span-full text-center">No badges created yet. Define one above.</div>
+                        <div class="text-slate-500 text-xs py-6 col-span-full text-center">No badges in catalog yet. Define one above.</div>
                     </div>
                 </div>
             </section>
@@ -808,10 +820,19 @@ function renderConsoleHtml() {
     <div id="toast" class="fixed bottom-6 right-6 z-50 hidden px-4 py-3 rounded-xl font-medium text-xs shadow-2xl transition-all border border-white/[0.08]"></div>
 
     <script>
-        let SECRET = localStorage.getItem("endcord_admin_key") || "";
+        function cleanString(str) {
+            if (!str) return "";
+            return String(str).replace(/[^\\x20-\\x7E]/g, "").trim();
+        }
+
+        let SECRET = cleanString(localStorage.getItem("endcord_admin_key") || "");
         let globalData = null;
         let stagedUserBadges = [];
         let currentTargetUserId = "";
+
+        function getAuthHeader() {
+            return "Bearer " + cleanString(SECRET);
+        }
 
         function toast(msg, isErr = false) {
             const t = document.getElementById("toast");
@@ -823,10 +844,15 @@ function renderConsoleHtml() {
         }
 
         async function login() {
-            const k = document.getElementById("key-input").value.trim();
-            if (!k) return;
-            SECRET = k;
-            localStorage.setItem("endcord_admin_key", k);
+            const input = document.getElementById("key-input");
+            const raw = input ? input.value : "";
+            const clean = cleanString(raw);
+            if (!clean) {
+                showLoginErr("Please enter the authorization key.");
+                return;
+            }
+            SECRET = clean;
+            localStorage.setItem("endcord_admin_key", clean);
             await checkAuth();
         }
 
@@ -842,7 +868,7 @@ function renderConsoleHtml() {
                 return;
             }
             try {
-                const res = await fetch("/admin/data", { headers: { "Authorization": "Bearer " + SECRET } });
+                const res = await fetch("/admin/data", { headers: { "Authorization": getAuthHeader() } });
                 if (res.status === 429) {
                     showLoginErr("Rate limit exceeded. Please wait 60 seconds.");
                     return;
@@ -1002,7 +1028,7 @@ function renderConsoleHtml() {
 
             const res = await fetch("/admin/catalog/add", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SECRET },
+                headers: { "Content-Type": "application/json", "Authorization": getAuthHeader() },
                 body: JSON.stringify({ name, tooltip, iconUrl })
             });
             const d = await res.json();
@@ -1026,7 +1052,7 @@ function renderConsoleHtml() {
 
             const grid = document.getElementById("catalog-grid");
             if (!catalog.length) {
-                grid.innerHTML = '<div class="text-slate-500 text-xs py-6 col-span-full text-center">No badges in catalog yet.</div>';
+                grid.innerHTML = '<div class="text-slate-500 text-xs py-6 col-span-full text-center">No badges in catalog yet. Define one above.</div>';
                 return;
             }
             grid.innerHTML = catalog.map(c => \`
@@ -1048,7 +1074,7 @@ function renderConsoleHtml() {
             if (!confirm("Delete this badge from catalog?")) return;
             const res = await fetch("/admin/catalog/delete", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SECRET },
+                headers: { "Content-Type": "application/json", "Authorization": getAuthHeader() },
                 body: JSON.stringify({ id })
             });
             const d = await res.json();
@@ -1063,7 +1089,7 @@ function renderConsoleHtml() {
             currentTargetUserId = uid;
 
             try {
-                const res = await fetch("/admin/user/" + uid, { headers: { "Authorization": "Bearer " + SECRET } });
+                const res = await fetch("/admin/user/" + uid, { headers: { "Authorization": getAuthHeader() } });
                 const data = await res.json();
                 stagedUserBadges = Array.isArray(data.badges) ? data.badges : [];
                 renderStagedBadges();
@@ -1140,7 +1166,7 @@ function renderConsoleHtml() {
 
             const res = await fetch("/admin/user/badges/update", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SECRET },
+                headers: { "Content-Type": "application/json", "Authorization": getAuthHeader() },
                 body: JSON.stringify({ userId: uid, badges: stagedUserBadges })
             });
             const d = await res.json();
@@ -1156,7 +1182,7 @@ function renderConsoleHtml() {
             if (!confirm("Purge user " + uid + " from database?")) return;
             const res = await fetch("/admin/user/delete", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SECRET },
+                headers: { "Content-Type": "application/json", "Authorization": getAuthHeader() },
                 body: JSON.stringify({ userId: uid })
             });
             const d = await res.json();
@@ -1173,7 +1199,7 @@ function renderConsoleHtml() {
 
             const res = await fetch("/admin/badge/add", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SECRET },
+                headers: { "Content-Type": "application/json", "Authorization": getAuthHeader() },
                 body: JSON.stringify({ userId, badgeType, badgeUrl, tooltip })
             });
             const d = await res.json();
@@ -1190,7 +1216,7 @@ function renderConsoleHtml() {
             if (!confirm("Revoke official role?")) return;
             const res = await fetch("/admin/badge/delete", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SECRET },
+                headers: { "Content-Type": "application/json", "Authorization": getAuthHeader() },
                 body: JSON.stringify({ id })
             });
             const d = await res.json();
@@ -1207,7 +1233,7 @@ function renderConsoleHtml() {
 
             const res = await fetch("/admin/version/publish", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SECRET },
+                headers: { "Content-Type": "application/json", "Authorization": getAuthHeader() },
                 body: JSON.stringify({ version, downloadUrl, releaseNotes, forceUpdate })
             });
             const d = await res.json();
@@ -1223,7 +1249,7 @@ function renderConsoleHtml() {
 
             const res = await fetch("/admin/import", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SECRET },
+                headers: { "Content-Type": "application/json", "Authorization": getAuthHeader() },
                 body: JSON.stringify({ profiles })
             });
             const d = await res.json();
@@ -1237,7 +1263,7 @@ function renderConsoleHtml() {
 
         async function downloadBackup() {
             try {
-                const res = await fetch("/admin/export", { headers: { "Authorization": "Bearer " + SECRET } });
+                const res = await fetch("/admin/export", { headers: { "Authorization": getAuthHeader() } });
                 const data = await res.json();
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
                 const a = document.createElement("a");
