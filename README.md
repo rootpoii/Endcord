@@ -58,6 +58,6 @@ Plugin ideas and fixes go through pull requests. Read [CONTRIBUTING.md](CONTRIBU
 
 ## License
 
-[GPL-3.0-or-later](LICENSE). Copyright © Vendicated and contributors.
+[GPL-3.0-or-later](LICENSE). Copyright © rootpoi and contributors.
 
 Endcord is not affiliated with Discord Inc.
