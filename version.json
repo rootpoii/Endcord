@@ -1,0 +1,137 @@
+{
+  "version": "1.0.1129",
+  "hash": "87ecd49",
+  "updatedAt": 1785775181129,
+  "date": "2026-08-03T16:39:41.129Z",
+  "downloadUrl": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/renderer.js",
+  "assets": [
+    {
+      "name": "endcordDesktopMain.js",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/endcordDesktopMain.js"
+    },
+    {
+      "name": "endcordDesktopMain.js.LEGAL.txt",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/endcordDesktopMain.js.LEGAL.txt"
+    },
+    {
+      "name": "endcordDesktopMain.js.map",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/endcordDesktopMain.js.map"
+    },
+    {
+      "name": "endcordDesktopPreload.js",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/endcordDesktopPreload.js"
+    },
+    {
+      "name": "endcordDesktopPreload.js.map",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/endcordDesktopPreload.js.map"
+    },
+    {
+      "name": "endcordDesktopRenderer.css",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/endcordDesktopRenderer.css"
+    },
+    {
+      "name": "endcordDesktopRenderer.css.map",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/endcordDesktopRenderer.css.map"
+    },
+    {
+      "name": "endcordDesktopRenderer.js",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/endcordDesktopRenderer.js"
+    },
+    {
+      "name": "endcordDesktopRenderer.js.LEGAL.txt",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/endcordDesktopRenderer.js.LEGAL.txt"
+    },
+    {
+      "name": "endcordDesktopRenderer.js.map",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/endcordDesktopRenderer.js.map"
+    },
+    {
+      "name": "patcher.js",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/patcher.js"
+    },
+    {
+      "name": "patcher.js.LEGAL.txt",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/patcher.js.LEGAL.txt"
+    },
+    {
+      "name": "patcher.js.map",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/patcher.js.map"
+    },
+    {
+      "name": "plugin-readmes.json",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/plugin-readmes.json"
+    },
+    {
+      "name": "plugins.json",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/plugins.json"
+    },
+    {
+      "name": "preload.js",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/preload.js"
+    },
+    {
+      "name": "preload.js.map",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/preload.js.map"
+    },
+    {
+      "name": "renderer.css",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/renderer.css"
+    },
+    {
+      "name": "renderer.css.map",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/renderer.css.map"
+    },
+    {
+      "name": "renderer.js",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/renderer.js"
+    },
+    {
+      "name": "renderer.js.LEGAL.txt",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/renderer.js.LEGAL.txt"
+    },
+    {
+      "name": "renderer.js.map",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/renderer.js.map"
+    },
+    {
+      "name": "vencordDesktopMain.js",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/vencordDesktopMain.js"
+    },
+    {
+      "name": "vencordDesktopMain.js.LEGAL.txt",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/vencordDesktopMain.js.LEGAL.txt"
+    },
+    {
+      "name": "vencordDesktopMain.js.map",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/vencordDesktopMain.js.map"
+    },
+    {
+      "name": "vencordDesktopPreload.js",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/vencordDesktopPreload.js"
+    },
+    {
+      "name": "vencordDesktopPreload.js.map",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/vencordDesktopPreload.js.map"
+    },
+    {
+      "name": "vencordDesktopRenderer.css",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/vencordDesktopRenderer.css"
+    },
+    {
+      "name": "vencordDesktopRenderer.css.map",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/vencordDesktopRenderer.css.map"
+    },
+    {
+      "name": "vencordDesktopRenderer.js",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/vencordDesktopRenderer.js"
+    },
+    {
+      "name": "vencordDesktopRenderer.js.LEGAL.txt",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/vencordDesktopRenderer.js.LEGAL.txt"
+    },
+    {
+      "name": "vencordDesktopRenderer.js.map",
+      "url": "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/vencordDesktopRenderer.js.map"
+    }
+  ]
+}
