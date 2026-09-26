@@ -2,7 +2,7 @@
 
 Endcord is a desktop client mod for Discord. It loads with the official app and adds plugins, themes, and a settings panel inside Discord.
 
-[Website](https://endcord.com) · [Download](https://endcord.com/download) · [Discord](https://discord.gg/VC6zmXzq34)
+[Website](https://endcord.com) · [Download](https://endcord.com/download) · [Discord](https://discord.gg/endcord)
 
 ## Install
 
