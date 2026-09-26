@@ -12,6 +12,8 @@ bun.lock
 package-lock.json
 
 *.log
+__pycache__/
+*.pyc
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
