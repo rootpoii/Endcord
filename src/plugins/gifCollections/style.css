@@ -1,0 +1,163 @@
+.vc-gif-collections-sort-container {
+    padding: 12px;
+    background-color: var(--background-secondary-alt);
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.vc-gif-collections-sort-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-strong);
+    margin-bottom: 8px;
+}
+
+.vc-gif-collections-sort-divider {
+    margin: 10px 0;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.vc-gif-collections-sort-description,
+.vc-gif-collections-sort-section-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-default);
+    margin-bottom: 8px;
+}
+
+.vc-gif-collections-sort-section {
+    margin-top: 12px;
+}
+
+.vc-gif-collections-sort-option {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.vc-gif-collections-sort-label {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text-default);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.vc-gif-collections-sort-input {
+    margin-right: 10px;
+    cursor: pointer;
+    accent-color: var(--brand-experiment);
+}
+
+.vc-gif-collections-sort-label:hover {
+    color: var(--text-strong);
+}
+
+.vc-gif-collections-modal {
+    background-color: var(--modal-background) !important;
+    border-radius: 8px;
+}
+
+.vc-gif-collections-modal-header {
+    padding: 16px;
+    background-color: var(--background-secondary-alt);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.vc-gif-collections-modal-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-strong);
+}
+
+.vc-gif-collections-modal-content {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.vc-gif-collections-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 8px 0;
+}
+
+.vc-gif-collections-info-row:last-child {
+    border-bottom: none;
+}
+
+.vc-gif-collections-info-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-default);
+}
+
+.vc-gif-collections-info-text {
+    font-size: 14px;
+    color: var(--text-muted);
+    max-width: 70%;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vc-gif-collections-modal-footer {
+    padding: 16px;
+    background-color: var(--background-secondary-alt);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.vc-gif-collections-rename-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-default);
+    margin: 16px 0 2px;
+}
+
+.vc-gif-collections-rename-input {
+    outline: 0 solid transparent;
+    transition: outline 0.2s;
+    border-radius: 4px;
+}
+
+.vc-gif-collections-input-warning {
+    outline: 1px solid var(--text-feedback-critical);
+}
+
+.vc-gif-collections-warning-text {
+    margin-top: 16px;
+    font-size: 14px;
+    color: var(--text-feedback-critical);
+}
+
+.vc-gif-collections-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+    max-height: 200px;
+    overflow: hidden auto;
+}
+
+.vc-gif-collections-button {
+    min-width: 0;
+    text-align: center;
+    padding: 8px;
+    background-color: var(--background-secondary);
+    color: var(--text-default);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.vc-gif-collections-button:hover {
+    background-color: var(--background-modifier-hover);
+}

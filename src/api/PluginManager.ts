@@ -381,9 +381,13 @@ export const initPluginManager = onlyOnce(function init() {
         if (p.settings) {
             p.settings.pluginName = p.name;
 
-            for (const [key, def] of Object.entries(p.settings.def)) {
-                if (def.onChange)
-                    SettingsStore.addChangeListener(`plugins.${p.name}.${key}`, def.onChange);
+            try {
+                for (const [key, def] of Object.entries(p.settings.def ?? {})) {
+                    if (def.onChange)
+                        SettingsStore.addChangeListener(`plugins.${p.name}.${key}`, def.onChange);
+                }
+            } catch (e) {
+                logger.error(`Failed to bind settings for ${p.name}\n`, e);
             }
         }
 

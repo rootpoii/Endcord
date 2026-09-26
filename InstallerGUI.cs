@@ -11,15 +11,16 @@ using System.Threading;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Endcord Installer")]
-[assembly: AssemblyDescription("Endcord Installer — installs, repairs and uninstalls the Endcord client mod for Discord desktop. Safe, open-source.")]
+[assembly: AssemblyDescription("Official Endcord desktop installer. Installs, repairs, or removes the open-source Endcord Discord client modification. Source: https://github.com/rootpoii/endcord")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Endcord")]
-[assembly: AssemblyProduct("Endcord Client Mod Installer")]
-[assembly: AssemblyCopyright("Copyright © 2026 Endcord. Open-source project.")]
+[assembly: AssemblyProduct("Endcord")]
+[assembly: AssemblyCopyright("Copyright © 2026 Endcord. Licensed under GPL-3.0-or-later.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("4.0.1.0")]
-[assembly: AssemblyFileVersion("4.0.1.0")]
+[assembly: AssemblyVersion("4.0.19.0")]
+[assembly: AssemblyFileVersion("4.0.19.0")]
+[assembly: AssemblyInformationalVersion("4.0.19")]
 [assembly: ComVisible(false)]
 [assembly: Guid("e8760626-8dd3-498f-abb9-eeac29266e0b")]
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
@@ -36,33 +37,42 @@ namespace EndcordInstaller
             Application.Run(new MainForm());
         }
     }
-    static class Win32Kernel
+    static class AppFiles
     {
-        public static void ForceKillProcessByName(string processName)
+        public static void CloseByName(string processName)
         {
             try
             {
                 string target = processName;
                 if (target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-                {
                     target = target.Substring(0, target.Length - 4);
-                }
-                foreach (var p in System.Diagnostics.Process.GetProcessesByName(target))
+
+                Process[] list = Process.GetProcessesByName(target);
+                for (int i = 0; i < list.Length; i++)
                 {
-                    try { p.Kill(); } catch { }
+                    Process p = list[i];
+                    try
+                    {
+                        if (!p.HasExited)
+                        {
+                            p.CloseMainWindow();
+                            if (!p.WaitForExit(2500) && !p.HasExited)
+                                p.Kill();
+                        }
+                    }
+                    catch { }
+                    try { p.Dispose(); } catch { }
                 }
             }
             catch { }
         }
 
-        public static void DirectWin32DeleteDir(string path)
+        public static void DeleteDirectory(string path)
         {
             try
             {
                 if (Directory.Exists(path))
-                {
                     Directory.Delete(path, true);
-                }
             }
             catch
             {
@@ -127,6 +137,8 @@ namespace EndcordInstaller
     // ═══════════════════════════════ GRAPHICS DRAWING HELPERS ═══════════════════════════════
     static class Gfx
     {
+        public static float GlobalTick = 0f;
+
         public static GraphicsPath RoundRect(Rectangle r, int rad)
         {
             var path = new GraphicsPath();
@@ -155,9 +167,38 @@ namespace EndcordInstaller
 
         public static void FillGradientRoundRect(Graphics g, Rectangle r, int rad, Color c1, Color c2, float angle)
         {
+            if (r.Width <= 0 || r.Height <= 0) return;
             using (var path = RoundRect(r, rad))
             using (var brush = new LinearGradientBrush(r, c1, c2, angle))
                 g.FillPath(brush, path);
+        }
+
+        public static void DrawGlow(Graphics g, Rectangle r, int rad, Color glowColor, int layers, float spread)
+        {
+            for (int i = layers; i >= 1; i--)
+            {
+                int alpha = (int)(glowColor.A * (1f - (float)(i - 1) / layers));
+                if (alpha <= 0) continue;
+                var layerColor = Color.FromArgb(Math.Min(255, alpha), glowColor.R, glowColor.G, glowColor.B);
+                int expand = (int)(i * spread);
+                var glowRect = new Rectangle(r.X - expand, r.Y - expand, r.Width + expand * 2, r.Height + expand * 2);
+                DrawRoundRect(g, glowRect, Math.Max(2, rad + expand), layerColor, 1.5f);
+            }
+        }
+
+        public static float Approach(float current, float target, float speed)
+        {
+            if (current < target)
+            {
+                current += speed;
+                if (current > target) current = target;
+            }
+            else if (current > target)
+            {
+                current -= speed;
+                if (current < target) current = target;
+            }
+            return current;
         }
     }
 
@@ -170,7 +211,7 @@ namespace EndcordInstaller
         public string ResourcesPath { get; set; }
         public string ExeName       { get; set; }
 
-        public bool IsInjected()
+        public bool HasEndcord()
         {
             try
             {
@@ -203,51 +244,20 @@ namespace EndcordInstaller
 
         public bool IsRunning()
         {
-            string n = Path.GetFileName(ExeName ?? "Discord.exe");
-            foreach (var p in Process.GetProcesses())
+            string n = Path.GetFileNameWithoutExtension(ExeName ?? "Discord.exe");
+            try
             {
-                try
-                {
-                    if (string.Equals(p.ProcessName + ".exe", n, StringComparison.OrdinalIgnoreCase)) return true;
-                }
-                catch { }
+                return Process.GetProcessesByName(n).Length > 0;
             }
-            return false;
+            catch
+            {
+                return false;
+            }
         }
 
-        public void Kill()
+        public void CloseApp()
         {
-            try
-            {
-                string exe = ExeName ?? "Discord.exe";
-                Win32Kernel.ForceKillProcessByName(exe);
-                var psi = new ProcessStartInfo("cmd.exe", "/c taskkill /f /im \"" + exe + "\" /t")
-                {
-                    CreateNoWindow = true,
-                    UseShellExecute = false
-                };
-                var p = Process.Start(psi);
-                if (p != null) p.WaitForExit(3000);
-            }
-            catch { }
-
-            try
-            {
-                string rootLower = RootPath.ToLower();
-                foreach (var proc in Process.GetProcesses())
-                {
-                    try
-                    {
-                        string mainModule = proc.MainModule != null ? proc.MainModule.FileName : null;
-                        if (!string.IsNullOrEmpty(mainModule) && mainModule.ToLower().StartsWith(rootLower))
-                        {
-                            proc.Kill();
-                        }
-                    }
-                    catch { }
-                }
-            }
-            catch { }
+            AppFiles.CloseByName(ExeName ?? "Discord.exe");
         }
 
         public void Launch()
@@ -283,6 +293,8 @@ namespace EndcordInstaller
 
         List<DiscordClient> clients = new List<DiscordClient>();
         List<ClientCard>    cards   = new List<ClientCard>();
+        bool _updatingSelectAll = false;
+        System.Windows.Forms.Timer _animTimer;
 
         // Controls
         Panel sidebarPanel, mainContent, titleBar, statusBar;
@@ -345,11 +357,11 @@ namespace EndcordInstaller
             return null;
         }
 
-        int activeTab = 0; // 0=Install, 1=Uninstall, 2=Repair, 3=Kill Discord
+        int activeTab = 0; // 0=Install, 1=Uninstall, 2=Repair, 3=Close Discord
 
         public MainForm()
         {
-            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.DoubleBuffer, true);
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.DoubleBuffer | ControlStyles.OptimizedDoubleBuffer, true);
             try
             {
                 this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
@@ -358,6 +370,28 @@ namespace EndcordInstaller
             SuspendLayout();
             BuildUI();
             ResumeLayout(false);
+
+            _animTimer = new System.Windows.Forms.Timer();
+            _animTimer.Interval = 25;
+            _animTimer.Tick += (s, e) =>
+            {
+                Gfx.GlobalTick += 0.05f;
+                if (Gfx.GlobalTick > 1000f) Gfx.GlobalTick = 0f;
+                if (titleBar != null) titleBar.Invalidate();
+                if (statusBar != null) statusBar.Invalidate();
+                if (sidebarPanel != null) sidebarPanel.Invalidate();
+                if (btnAction != null) btnAction.Invalidate();
+                if (chkAll != null) chkAll.Invalidate();
+                if (chkRestart != null) chkRestart.Invalidate();
+                if (btnRefresh != null) btnRefresh.Invalidate();
+                if (btnAddPath != null) btnAddPath.Invalidate();
+                if (progress != null && progress.Visible) progress.Invalidate();
+                foreach (var c in cards) c.Invalidate();
+                for (int i = 0; i < sidebarTabs.Length; i++)
+                    if (sidebarTabs[i] != null) sidebarTabs[i].Invalidate();
+            };
+            _animTimer.Start();
+
             RefreshClients();
         }
 
@@ -369,11 +403,30 @@ namespace EndcordInstaller
             DeleteObject(ptr);
         }
 
+        void UpdateSelectAllState()
+        {
+            if (_updatingSelectAll) return;
+            _updatingSelectAll = true;
+            try
+            {
+                bool all = cards.Count > 0;
+                foreach (var c in cards)
+                {
+                    if (!c.Selected) { all = false; break; }
+                }
+                chkAll.Checked = all;
+            }
+            finally
+            {
+                _updatingSelectAll = false;
+            }
+        }
+
         void BuildUI()
         {
             Text            = "Endcord Installer";
-            ClientSize      = new Size(820, 580);
-            MinimumSize     = new Size(820, 580);
+            ClientSize      = new Size(880, 620);
+            MinimumSize     = new Size(880, 620);
             BackColor       = C.Bg;
             ForeColor       = C.Text;
             FormBorderStyle = FormBorderStyle.None;
@@ -388,15 +441,26 @@ namespace EndcordInstaller
             {
                 var g = e.Graphics;
                 g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+
                 int textX = 16;
                 if (LogoImg != null)
                 {
                     g.DrawImage(LogoImg, new Rectangle(14, 8, 28, 28));
                     textX = 50;
                 }
-                TextRenderer.DrawText(g, "Endcord Installer", F.Title,
-                    new Rectangle(textX, 0, 260, 44), C.Text,
-                    TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
+
+                using (var fBold = new Font("Segoe UI", 12f, FontStyle.Bold))
+                using (var fSub = new Font("Segoe UI", 11f, FontStyle.Regular))
+                {
+                    var szBold = TextRenderer.MeasureText(g, "Endcord", fBold);
+                    int textY = (titleBar.Height - szBold.Height) / 2;
+                    TextRenderer.DrawText(g, "Endcord", fBold, new Point(textX, textY), Color.White);
+                    TextRenderer.DrawText(g, "Installer", fSub, new Point(textX + szBold.Width - 4, textY + 1), Color.FromArgb(140, 155, 230));
+                }
+
+                using (var pen = new Pen(Color.FromArgb(30, C.BorderLight), 1f))
+                    g.DrawLine(pen, 0, titleBar.Height - 1, titleBar.Width, titleBar.Height - 1);
             };
 
             var bClose = WinBtn("r", C.Red, DockStyle.Right);
@@ -419,19 +483,49 @@ namespace EndcordInstaller
             sidebarPanel.BackColor = C.Sidebar;
 
             string[] tabTitles = { "Install Endcord", "Uninstall", "Repair Install", "Close Discord" };
-            string[] tabDesc   = { "Inject client mod", "Restore vanilla", "Fix system files", "Force exit clients" };
+            string[] tabDesc   = { "Inject client mod", "Restore vanilla", "Fix broken files", "Force exit clients" };
 
             for (int i = 0; i < 4; i++)
             {
                 int idx = i;
                 var tab = new SidebarTab(tabTitles[i], tabDesc[i], idx == 0);
-                tab.Top = 16 + i * 58;
+                tab.Top = 16 + i * 62;
                 tab.Left = 10;
                 tab.Width = 190;
                 tab.Click += (s, e) => SwitchTab(idx);
                 sidebarTabs[i] = tab;
                 sidebarPanel.Controls.Add(tab);
             }
+
+            sidebarPanel.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+
+                int x = sidebarPanel.Width - 1;
+                using (var pen = new Pen(Color.FromArgb(35, C.BorderLight), 1f))
+                    g.DrawLine(pen, x, 0, x, sidebarPanel.Height);
+
+                int beamH = 86;
+                float travel = sidebarPanel.Height + beamH + 50;
+                float y = sidebarPanel.Height + 25 - ((Gfx.GlobalTick * 48) % travel);
+                var beam = new Rectangle(x - 2, (int)y, 5, beamH);
+                if (beam.Height > 2)
+                {
+                    try
+                    {
+                        using (var sb = new LinearGradientBrush(beam, Color.Transparent, Color.FromArgb(120, Color.White), 90f))
+                        {
+                            var blend = new ColorBlend(3);
+                            blend.Colors = new Color[] { Color.Transparent, Color.FromArgb(130, Color.White), Color.Transparent };
+                            blend.Positions = new float[] { 0f, 0.5f, 1f };
+                            sb.InterpolationColors = blend;
+                            g.FillRectangle(sb, beam);
+                        }
+                    }
+                    catch { }
+                }
+            };
 
             // ── STATUS BAR ──────────────────────────────────────────
             statusBar = new DBPanel();
@@ -488,11 +582,16 @@ namespace EndcordInstaller
             // Client Cards Flow
             clientFlow = new FlowLayoutPanel();
             clientFlow.Dock = DockStyle.Top;
-            clientFlow.Height = 220;
+            clientFlow.Height = 240;
             clientFlow.AutoScroll = true;
             clientFlow.WrapContents = false;
             clientFlow.FlowDirection = FlowDirection.TopDown;
             clientFlow.Padding = new Padding(0, 4, 0, 4);
+            clientFlow.SizeChanged += (s, e) =>
+            {
+                int targetW = clientFlow.ClientSize.Width > 200 ? clientFlow.ClientSize.Width - 2 : 628;
+                foreach (var c in cards) c.Width = targetW;
+            };
             mainContent.Controls.Add(clientFlow);
 
             // Options Bar
@@ -505,7 +604,16 @@ namespace EndcordInstaller
             chkAll.Width = 100;
             chkAll.CheckedChanged += (s, e) =>
             {
-                foreach (var c in cards) c.Selected = chkAll.Checked;
+                if (_updatingSelectAll) return;
+                _updatingSelectAll = true;
+                try
+                {
+                    foreach (var c in cards) c.Selected = chkAll.Checked;
+                }
+                finally
+                {
+                    _updatingSelectAll = false;
+                }
             };
             optsPanel.Controls.Add(chkAll);
 
@@ -525,7 +633,7 @@ namespace EndcordInstaller
             logBox.BorderStyle = BorderStyle.None;
             logBox.Font = F.Code;
             logBox.ReadOnly = true;
-            logBox.Margin = new Padding(0, 8, 0, 8);
+            logBox.Margin = new Padding(0, 12, 0, 8);
             mainContent.Controls.Add(logBox);
 
             // Bottom Action Bar
@@ -580,7 +688,7 @@ namespace EndcordInstaller
             SetStatus("Selected Mode: " + tabTitlesText[activeTab]);
         }
 
-        static readonly string[] tabTitlesText = { "Install", "Uninstall", "Repair", "Kill Discord" };
+        static readonly string[] tabTitlesText = { "Install", "Uninstall", "Repair", "Close Discord" };
 
         // ── DETECT DISCORD INSTALLATIONS ────────────────────────────
         void RefreshClients()
@@ -606,8 +714,9 @@ namespace EndcordInstaller
             {
                 clients.Add(c);
                 var card = new ClientCard(c);
-                card.Width = 560;
+                card.Width = clientFlow.ClientSize.Width > 200 ? clientFlow.ClientSize.Width - 2 : 628;
                 card.Selected = true;
+                card.SelectionChanged += (s, e) => UpdateSelectAllState();
                 cards.Add(card);
                 clientFlow.Controls.Add(card);
             }
@@ -658,8 +767,9 @@ namespace EndcordInstaller
             if (c == null) return false;
             clients.Add(c);
             var card = new ClientCard(c);
-            card.Width = 560;
+            card.Width = clientFlow.ClientSize.Width > 200 ? clientFlow.ClientSize.Width - 2 : 628;
             card.Selected = true;
+            card.SelectionChanged += (s, e) => UpdateSelectAllState();
             cards.Add(card);
             clientFlow.Controls.Add(card);
             return true;
@@ -690,7 +800,11 @@ namespace EndcordInstaller
             new Thread(() =>
             {
                 SafeLog("Stopping all running Discord instances...", C.TextDim);
-                KillAllDiscordInstances();
+                string[] names = { "Discord", "DiscordCanary", "DiscordPTB", "DiscordDevelopment" };
+                foreach (var name in names)
+                {
+                    try { AppFiles.CloseByName(name); } catch { }
+                }
                 SafeLog("All Discord instances closed successfully.", C.Green);
                 Invoke(new Action(() => { SetBusy(false); SetStatus("Discord terminated"); }));
             }) { IsBackground = true }.Start();
@@ -712,7 +826,7 @@ namespace EndcordInstaller
                 try
                 {
                     SafeLog("Closing selected target Discord instances...", C.TextDim);
-                    KillTargetDiscordClients(targets);
+                    CloseSelectedClients(targets);
                     Thread.Sleep(1200);
 
                     if (activeTab == 0 || activeTab == 2)
@@ -747,7 +861,7 @@ namespace EndcordInstaller
         static void SafeDeleteDir(string path)
         {
             if (!Directory.Exists(path)) return;
-            Win32Kernel.DirectWin32DeleteDir(path);
+            AppFiles.DeleteDirectory(path);
         }
 
         static void SafeDeleteFile(string path)
@@ -761,80 +875,65 @@ namespace EndcordInstaller
             catch { }
         }
 
-        // ─── INJECTION HELPERS ───────────────────────────────────────────────────
+        // ─── INSTALL HELPERS ───────────────────────────────────────────────────
 
-        // Returns the path to discord_desktop_core index.js if found in modules folder
-        // Always picks the HIGHEST numbered discord_desktop_core-N to survive Discord updates
-        static string FindDesktopCoreIndex(string appVerDir)
+        // Returns all discord_desktop_core index.js paths found in modules folder
+        static List<string> FindAllDesktopCoreIndices(string appVerDir)
         {
+            var list = new List<string>();
             string modulesDir = Path.Combine(appVerDir, "modules");
-            if (!Directory.Exists(modulesDir)) return null;
+            if (!Directory.Exists(modulesDir)) return list;
 
             string[] coreDirs = Directory.GetDirectories(modulesDir, "discord_desktop_core-*");
-            if (coreDirs.Length == 0) return null;
-
-            // Sort descending to always get the newest core version number
-            Array.Sort(coreDirs, (a, b) =>
-            {
-                string na = Path.GetFileName(a).Replace("discord_desktop_core-", "");
-                string nb = Path.GetFileName(b).Replace("discord_desktop_core-", "");
-                int ia, ib;
-                bool pa = int.TryParse(na, out ia);
-                bool pb = int.TryParse(nb, out ib);
-                if (pa && pb) return ib.CompareTo(ia);
-                return string.Compare(b, a, StringComparison.OrdinalIgnoreCase);
-            });
-
             foreach (string dir in coreDirs)
             {
                 string inner = Path.Combine(dir, "discord_desktop_core", "index.js");
-                if (File.Exists(inner)) return inner;
+                if (File.Exists(inner)) list.Add(inner);
             }
-            return null;
+            return list;
         }
 
-        // Injects our patcher require into index.js (prepend, idempotent)
-        static void InjectDesktopCore(string indexJs)
-        {
-            string req = "require";
-            string p = "path";
-            string env = "process.env.APPDATA";
-            string patcherLine = string.Format("{0}({0}('{1}').join({2}, 'Endcord', 'dist', 'patcher.js'));", req, p, env);
-
-            string existing = File.Exists(indexJs) ? File.ReadAllText(indexJs) : "";
-
-            // Make a backup of original if none exists
-            string bakPath = indexJs + ".bak";
-            if (!File.Exists(bakPath))
-                File.WriteAllText(bakPath, existing);
-
-            // Already patched? Skip.
-            if (existing.Contains("Endcord"))
-                return;
-
-            // Prepend our require line
-            File.WriteAllText(indexJs, patcherLine + "\n" + existing);
-        }
-
-        // Restores original index.js from .bak, or removes our patcher line
+        // Restores original index.js from .bak or clean vanilla core.asar require
         static void RestoreDesktopCore(string indexJs)
         {
             string bakPath = indexJs + ".bak";
+            bool restoredFromBak = false;
             if (File.Exists(bakPath))
             {
-                File.Copy(bakPath, indexJs, overwrite: true);
-                File.Delete(bakPath);
+                try
+                {
+                    string bakContent = File.ReadAllText(bakPath);
+                    if (!bakContent.Contains("Endcord") && bakContent.Contains("core.asar"))
+                    {
+                        File.WriteAllText(indexJs, bakContent);
+                        restoredFromBak = true;
+                    }
+                }
+                catch { }
+                SafeDeleteFile(bakPath);
             }
-            else if (File.Exists(indexJs))
+
+            if (!restoredFromBak)
             {
-                // Strip our patcher line manually
-                string content = File.ReadAllText(indexJs);
-                string[] lines = content.Split('\n');
-                var filtered = new System.Collections.Generic.List<string>();
-                foreach (var line in lines)
-                    if (!line.Contains("Endcord") && !line.Contains("patcher.js"))
-                        filtered.Add(line);
-                File.WriteAllText(indexJs, string.Join("\n", filtered));
+                if (File.Exists(indexJs))
+                {
+                    string content = File.ReadAllText(indexJs);
+                    string[] lines = content.Split('\n');
+                    var filtered = new List<string>();
+                    foreach (var line in lines)
+                    {
+                        if (!line.Contains("Endcord") && !line.Contains("patcher.js"))
+                            filtered.Add(line.TrimEnd('\r'));
+                    }
+                    string result = string.Join("\r\n", filtered).Trim();
+                    if (!result.Contains("core.asar"))
+                        result = "module.exports = require('./core.asar');";
+                    File.WriteAllText(indexJs, result + "\r\n");
+                }
+                else
+                {
+                    File.WriteAllText(indexJs, "module.exports = require('./core.asar');\r\n");
+                }
             }
         }
 
@@ -855,34 +954,38 @@ namespace EndcordInstaller
             string origAsar   = Path.Combine(resDir, "app.asar");
             string backupAsar = Path.Combine(resDir, "_app.asar");
 
-            if (Directory.Exists(origAsar))
-            {
-                string trapped = Path.Combine(origAsar, "_app.asar");
-                if (File.Exists(trapped) && new FileInfo(trapped).Length > 100000)
-                {
-                    SafeDeleteFile(backupAsar);
-                    try { File.Move(trapped, backupAsar); } catch { }
-                }
-                SafeDeleteDir(origAsar);
-            }
-
+            // 1. Remove app directory
             if (Directory.Exists(appDir))
             {
-                string idxFile = Path.Combine(appDir, "index.js");
-                if (File.Exists(idxFile)) SafeDeleteFile(idxFile);
                 SafeDeleteDir(appDir);
             }
 
+            // 2. If app.asar is a directory, remove it
+            if (Directory.Exists(origAsar))
+            {
+                SafeDeleteDir(origAsar);
+            }
+
+            // 3. Restore _app.asar -> app.asar
             if (File.Exists(backupAsar))
             {
-                SafeDeleteFile(origAsar);
+                if (File.Exists(origAsar))
+                {
+                    SafeDeleteFile(origAsar);
+                }
                 try
                 {
-                    File.Copy(backupAsar, origAsar, true);
+                    File.Move(backupAsar, origAsar);
                 }
-                catch { }
-                if (File.Exists(origAsar) && new FileInfo(origAsar).Length > 100000)
-                    SafeDeleteFile(backupAsar);
+                catch
+                {
+                    try
+                    {
+                        File.Copy(backupAsar, origAsar, true);
+                        SafeDeleteFile(backupAsar);
+                    }
+                    catch { }
+                }
             }
         }
 
@@ -895,9 +998,8 @@ namespace EndcordInstaller
             try
             {
                 Directory.CreateDirectory(DistPath);
-                string[] files = { "patcher.js", "patcher.js.map", "preload.js", "preload.js.map",
-                                   "renderer.js", "renderer.js.map", "renderer.css", "renderer.css.map" };
-                SafeLog("Extracting Endcord system files...", C.TextDim);
+                string[] files = { "patcher.js", "preload.js", "renderer.js", "renderer.css" };
+                SafeLog("Copying Endcord files...", C.TextDim);
                 for (int i = 0; i < files.Length; i++)
                 {
                     string dest = Path.Combine(DistPath, files[i]);
@@ -908,7 +1010,7 @@ namespace EndcordInstaller
             }
             catch (Exception ex) { SafeLog("Extraction failed: " + ex.Message, C.Red); return; }
 
-            SafeLog("Injecting patcher into Discord clients...", C.TextDim);
+            SafeLog("Installing Endcord into selected Discord clients...", C.TextDim);
             SetProg(48);
 
             // ── Step 2: Inject into each Discord version ──────────────────────────
@@ -917,7 +1019,7 @@ namespace EndcordInstaller
                 var c = targets[i];
                 try
                 {
-                    c.Kill();
+                    CloseClient(c);
                     Thread.Sleep(600);
 
                     var appDirs = Directory.GetDirectories(c.RootPath, "app-*");
@@ -927,17 +1029,13 @@ namespace EndcordInstaller
                     bool patchedAny = false;
                     foreach (var appVerDir in appDirs)
                     {
-                        // ── PRIMARY: discord_desktop_core injection (modern Discord) ──
-                        string coreIndex = FindDesktopCoreIndex(appVerDir);
-                        if (coreIndex != null)
+                        // Clean any previous discord_desktop_core injection so Discord doesn't double-load
+                        var coreIndices = FindAllDesktopCoreIndices(appVerDir);
+                        foreach (var coreIndex in coreIndices)
                         {
-                            SafeLog("  [core] " + coreIndex, C.TextDim);
-                            InjectDesktopCore(coreIndex);
-                            patchedAny = true;
-                            continue;
+                            RestoreDesktopCore(coreIndex);
                         }
 
-                        // ── FALLBACK: legacy resources/app/index.js injection ────────
                         string res = Path.Combine(appVerDir, "resources");
                         if (!Directory.Exists(res)) continue;
 
@@ -945,24 +1043,42 @@ namespace EndcordInstaller
                         string origAsar   = Path.Combine(res, "app.asar");
                         string backupAsar = Path.Combine(res, "_app.asar");
 
-                        if (Directory.Exists(origAsar)) SafeRestoreAsar(res);
-                        SafeBackupAsar(origAsar, backupAsar);
+                        if (Directory.Exists(origAsar))
+                        {
+                            SafeDeleteDir(origAsar);
+                        }
+
+                        if (File.Exists(origAsar))
+                        {
+                            if (!File.Exists(backupAsar) || new FileInfo(backupAsar).Length < 100000)
+                            {
+                                SafeDeleteFile(backupAsar);
+                                File.Move(origAsar, backupAsar);
+                            }
+                            else
+                            {
+                                SafeDeleteFile(origAsar);
+                            }
+                        }
 
                         if (Directory.Exists(appDir)) SafeDeleteDir(appDir);
                         Directory.CreateDirectory(appDir);
 
                         File.WriteAllText(Path.Combine(appDir, "package.json"),
-                            "{\n  \"name\": \"discord\",\n  \"main\": \"index.js\"\n}");
+                            "{\n  \"name\": \"discord\",\n  \"main\": \"index.js\"\n}\n");
 
-                        File.WriteAllText(Path.Combine(appDir, "index.js"),
-                            "require(require('path').join(process.env.APPDATA, 'Endcord', 'dist', 'patcher.js'));\n");
+                        string loaderJs = "const { join } = require('path');\n" +
+                            "const appData = process.env.APPDATA || (process.platform === 'darwin' ? join(process.env.HOME, 'Library/Application Support') : join(process.env.HOME, '.config'));\n" +
+                            "const patcherPath = join(appData, 'Endcord', 'dist', 'patcher.js');\n" +
+                            "require(patcherPath);\n";
+                        File.WriteAllText(Path.Combine(appDir, "index.js"), loaderJs);
 
-                        SafeLog("  [legacy] " + appDir, C.TextDim);
+                        SafeLog("  installed " + appDir, C.TextDim);
                         patchedAny = true;
                     }
 
                     if (patchedAny)
-                        SafeLog("Successfully patched " + c.Name + " (" + c.Version + ")", C.Green);
+                        SafeLog("Successfully installed Endcord into " + c.Name + " (" + c.Version + ")", C.Green);
                     else
                         SafeLog("No patchable paths found for " + c.Name, C.Red);
                 }
@@ -981,24 +1097,25 @@ namespace EndcordInstaller
                 var c = targets[i];
                 try
                 {
-                    ForceKillClient(c);
+                    CloseClient(c);
                     Thread.Sleep(600);
 
                     var appDirs = Directory.GetDirectories(c.RootPath, "app-*");
                     foreach (var appVerDir in appDirs)
                     {
-                        // ── PRIMARY: restore discord_desktop_core ──────────────────
-                        string coreIndex = FindDesktopCoreIndex(appVerDir);
-                        if (coreIndex != null)
+                        // 1. Restore all discord_desktop_core modules
+                        var coreIndices = FindAllDesktopCoreIndices(appVerDir);
+                        foreach (var coreIndex in coreIndices)
                         {
                             RestoreDesktopCore(coreIndex);
-                            continue;
                         }
 
-                        // ── FALLBACK: restore legacy resources/app ─────────────────
+                        // 2. Restore resources directory and clean app folder
                         string res = Path.Combine(appVerDir, "resources");
-                        if (!Directory.Exists(res)) continue;
-                        SafeRestoreAsar(res);
+                        if (Directory.Exists(res))
+                        {
+                            SafeRestoreAsar(res);
+                        }
                     }
                     SafeLog("Successfully uninstalled from " + c.Name, C.Green);
                 }
@@ -1015,35 +1132,17 @@ namespace EndcordInstaller
             SafeLog("Uninstall complete.", C.AccentLight);
         }
 
-        static void ForceKillClient(DiscordClient c)
+        static void CloseClient(DiscordClient c)
         {
             if (c == null) return;
-            try
-            {
-                string exeName = Path.GetFileName(c.ExeName ?? "Discord.exe");
-                Win32Kernel.ForceKillProcessByName(exeName);
-            }
-            catch { }
+            try { c.CloseApp(); } catch { }
         }
 
-        static void KillTargetDiscordClients(List<DiscordClient> targets)
+        static void CloseSelectedClients(List<DiscordClient> targets)
         {
             foreach (var c in targets)
             {
-                try { ForceKillClient(c); } catch { }
-            }
-        }
-
-        static void KillAllDiscordInstances()
-        {
-            string[] exes = { "Discord.exe", "DiscordCanary.exe", "DiscordPTB.exe", "DiscordDevelopment.exe", "Update.exe" };
-            foreach (var exe in exes)
-            {
-                try
-                {
-                    Win32Kernel.ForceKillProcessByName(exe);
-                }
-                catch { }
+                try { CloseClient(c); } catch { }
             }
         }
 
@@ -1052,7 +1151,24 @@ namespace EndcordInstaller
             var asm = Assembly.GetExecutingAssembly();
             string match = null;
             foreach (var n in asm.GetManifestResourceNames())
-                if (n.EndsWith(name, StringComparison.OrdinalIgnoreCase)) { match = n; break; }
+            {
+                if (string.Equals(n, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    match = n;
+                    break;
+                }
+            }
+            if (match == null)
+            {
+                foreach (var n in asm.GetManifestResourceNames())
+                {
+                    if (n.EndsWith(name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        match = n;
+                        break;
+                    }
+                }
+            }
             if (match == null) throw new Exception("Embedded asset not found: " + name);
             using (var s = asm.GetManifestResourceStream(match))
             using (var f = new FileStream(dest, FileMode.Create))
@@ -1095,12 +1211,15 @@ namespace EndcordInstaller
     {
         bool _active = false;
         bool _hov = false;
+        float _hoverAnim = 0f;
+        float _activeAnim = 0f;
         string _title, _desc;
 
         public SidebarTab(string title, string desc, bool active)
         {
             _title = title; _desc = desc; _active = active;
-            Height = 50; Cursor = Cursors.Hand; DoubleBuffered = true;
+            _activeAnim = active ? 1f : 0f;
+            Height = 54; Cursor = Cursors.Hand; DoubleBuffered = true;
             MouseEnter += (s, e) => { _hov = true; Invalidate(); };
             MouseLeave += (s, e) => { _hov = false; Invalidate(); };
         }
@@ -1113,22 +1232,75 @@ namespace EndcordInstaller
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
 
+            _hoverAnim = Gfx.Approach(_hoverAnim, _hov ? 1f : 0f, 0.12f);
+            _activeAnim = Gfx.Approach(_activeAnim, _active ? 1f : 0f, 0.12f);
+
             var r = new Rectangle(0, 0, Width - 1, Height - 1);
-            if (_active)
+
+            // Active glow (fades with _activeAnim)
+            if (_activeAnim > 0.01f)
             {
-                Gfx.FillRoundRect(g, r, 6, C.CardSel);
-                Gfx.DrawRoundRect(g, r, 6, C.Accent, 1.25f);
-            }
-            else if (_hov)
-            {
-                Gfx.FillRoundRect(g, r, 6, C.CardHov);
+                float pulse = (float)(Math.Sin(Gfx.GlobalTick * 3) * 0.5 + 0.5);
+                int glowA = (int)((30 + 20 * pulse) * _activeAnim);
+                Gfx.DrawGlow(g, r, 8, Color.FromArgb(glowA, C.AccentLight), 2, 2f);
+
+                int fillA1 = (int)(60 * _activeAnim);
+                int fillA2 = (int)(15 * _activeAnim);
+                Gfx.FillGradientRoundRect(g, r, 8, Color.FromArgb(fillA1, C.Accent), Color.FromArgb(fillA2, C.Accent), 90f);
+
+                int borderA = (int)((120 + 40 * pulse) * _activeAnim);
+                Gfx.DrawRoundRect(g, r, 8, Color.FromArgb(borderA, C.AccentLight), 1f);
+
+                int barH = (int)(24 * _activeAnim);
+                if (barH > 2)
+                {
+                    var barRect = new Rectangle(0, (Height - barH) / 2, 3, barH);
+                    Gfx.FillRoundRect(g, barRect, 1, Color.FromArgb((int)(255 * _activeAnim), Color.White));
+                }
             }
 
-            TextRenderer.DrawText(g, _title, F.TabText, new Rectangle(14, 8, Width - 20, 20),
-                _active ? C.Text : (_hov ? C.Text : C.TextDim), TextFormatFlags.Left);
+            // Hover fill when not fully active
+            if (_hoverAnim > 0.01f && _activeAnim < 0.99f)
+            {
+                float factor = _hoverAnim * (1f - _activeAnim);
+                int bgAlpha = (int)(25 * factor);
+                int borderAlpha = (int)(50 * factor);
+                if (bgAlpha > 0)
+                    Gfx.FillRoundRect(g, r, 8, Color.FromArgb(bgAlpha, 30, 33, 58));
+                if (borderAlpha > 0)
+                    Gfx.DrawRoundRect(g, r, 8, Color.FromArgb(borderAlpha, C.AccentLight), 1f);
+            }
 
-            TextRenderer.DrawText(g, _desc, F.MutedText, new Rectangle(14, 28, Width - 20, 16),
-                _active ? C.AccentLight : C.TextDark, TextFormatFlags.Left);
+            int textLeft = 18;
+            // Smoothly interpolate title color: Dim -> Hover White -> Active White
+            float titleBright = Math.Max(_activeAnim, _hoverAnim);
+            Color titleCol = Color.FromArgb(
+                (int)(C.TextDim.R + (255 - C.TextDim.R) * titleBright),
+                (int)(C.TextDim.G + (255 - C.TextDim.G) * titleBright),
+                (int)(C.TextDim.B + (255 - C.TextDim.B) * titleBright));
+
+            TextRenderer.DrawText(g, _title, F.TabText, new Rectangle(textLeft, 9, Width - textLeft - 10, 18),
+                titleCol, TextFormatFlags.Left);
+
+            // Subtitle color: Dark -> Hover Dim -> Active AccentLight
+            Color descCol;
+            if (_activeAnim > 0.01f)
+            {
+                descCol = Color.FromArgb(
+                    (int)(C.TextDark.R + (C.AccentLight.R - C.TextDark.R) * _activeAnim),
+                    (int)(C.TextDark.G + (C.AccentLight.G - C.TextDark.G) * _activeAnim),
+                    (int)(C.TextDark.B + (C.AccentLight.B - C.TextDark.B) * _activeAnim));
+            }
+            else
+            {
+                descCol = Color.FromArgb(
+                    (int)(C.TextDark.R + (C.TextDim.R - C.TextDark.R) * _hoverAnim),
+                    (int)(C.TextDark.G + (C.TextDim.G - C.TextDark.G) * _hoverAnim),
+                    (int)(C.TextDark.B + (C.TextDim.B - C.TextDark.B) * _hoverAnim));
+            }
+
+            TextRenderer.DrawText(g, _desc, F.MutedText, new Rectangle(textLeft, 29, Width - textLeft - 10, 16),
+                descCol, TextFormatFlags.Left);
         }
     }
 
@@ -1137,17 +1309,27 @@ namespace EndcordInstaller
         DiscordClient dc;
         bool _sel = false;
         bool _hov = false;
+        float _hoverAnim = 0f;
+        float _selectAnim = 0f;
+
+        public event EventHandler SelectionChanged;
 
         public bool Selected
         {
             get { return _sel; }
-            set { _sel = value; Invalidate(); }
+            set
+            {
+                _sel = value;
+                Invalidate();
+                if (SelectionChanged != null) SelectionChanged(this, EventArgs.Empty);
+            }
         }
 
         public ClientCard(DiscordClient client)
         {
             dc = client;
-            Height = 72; Margin = new Padding(0, 0, 0, 8);
+            _selectAnim = 0f;
+            Height = 78; Margin = new Padding(0, 0, 0, 8);
             Cursor = Cursors.Hand; DoubleBuffered = true;
             MouseEnter += (s, e) => { _hov = true; Invalidate(); };
             MouseLeave += (s, e) => { _hov = false; Invalidate(); };
@@ -1160,88 +1342,137 @@ namespace EndcordInstaller
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
 
+            _hoverAnim = Gfx.Approach(_hoverAnim, _hov ? 1f : 0f, 0.12f);
+            _selectAnim = Gfx.Approach(_selectAnim, _sel ? 1f : 0f, 0.12f);
+
             var r = new Rectangle(0, 0, Width - 1, Height - 1);
 
-            Color bg = _sel ? C.CardSel : (_hov ? C.CardHov : C.Card);
-            Gfx.FillRoundRect(g, r, 8, bg);
+            // Base background
+            int baseR = C.Card.R + (int)((C.CardHov.R - C.Card.R) * _hoverAnim);
+            int baseG = C.Card.G + (int)((C.CardHov.G - C.Card.G) * _hoverAnim);
+            int baseB = C.Card.B + (int)((C.CardHov.B - C.Card.B) * _hoverAnim);
+            Gfx.FillRoundRect(g, r, 10, Color.FromArgb(baseR, baseG, baseB));
 
-            if (_sel)
-                Gfx.DrawRoundRect(g, r, 8, Color.FromArgb(140, C.Accent), 1.25f);
-            else if (_hov)
-                Gfx.DrawRoundRect(g, r, 8, Color.FromArgb(60, C.Accent), 1f);
-            else
-                Gfx.DrawRoundRect(g, r, 8, C.Border, 1f);
-
-            int cx = 24, cy = Height / 2;
-            var chkRect = new Rectangle(cx - 9, cy - 9, 18, 18);
-            if (_sel)
+            // Selected glow & gradient (smoothly fading in)
+            if (_selectAnim > 0.01f)
             {
-                Gfx.FillRoundRect(g, chkRect, 5, C.Accent);
-                using (var p = new Pen(Color.White, 2f))
+                float pulse = (float)(Math.Sin(Gfx.GlobalTick * 3) * 0.5 + 0.5);
+                int glowA = (int)((35 + 25 * pulse) * _selectAnim);
+                Gfx.DrawGlow(g, r, 10, Color.FromArgb(glowA, C.AccentLight), 2, 2f);
+
+                Color selC1 = Color.FromArgb((int)(255 * _selectAnim), 38, 42, 90);
+                Color selC2 = Color.FromArgb((int)(255 * _selectAnim), 22, 25, 54);
+                Gfx.FillGradientRoundRect(g, r, 10, selC1, selC2, 45f);
+            }
+
+            Color unselBorder = Color.FromArgb(
+                (int)(C.Border.R + (C.AccentLight.R - C.Border.R) * (_hoverAnim * 0.4f)),
+                (int)(C.Border.G + (C.AccentLight.G - C.Border.G) * (_hoverAnim * 0.4f)),
+                (int)(C.Border.B + (C.AccentLight.B - C.Border.B) * (_hoverAnim * 0.4f)));
+
+            Color finalBorder = Color.FromArgb(
+                (int)(unselBorder.R + (C.AccentLight.R - unselBorder.R) * _selectAnim),
+                (int)(unselBorder.G + (C.AccentLight.G - unselBorder.G) * _selectAnim),
+                (int)(unselBorder.B + (C.AccentLight.B - unselBorder.B) * _selectAnim));
+
+            Gfx.DrawRoundRect(g, r, 10, finalBorder, 1f);
+
+            // Checkbox
+            int cx = 26, cy = Height / 2;
+            var chkRect = new Rectangle(cx - 10, cy - 10, 20, 20);
+
+            // Unchecked base
+            Gfx.FillRoundRect(g, chkRect, 6, Color.FromArgb(15, C.Bg));
+            Color chkBorderC = Color.FromArgb(
+                (int)(C.TextDark.R + (C.TextDim.R - C.TextDark.R) * _hoverAnim),
+                (int)(C.TextDark.G + (C.TextDim.G - C.TextDark.G) * _hoverAnim),
+                (int)(C.TextDark.B + (C.TextDim.B - C.TextDark.B) * _hoverAnim));
+            Gfx.DrawRoundRect(g, chkRect, 6, chkBorderC, 1.5f);
+
+            // Checked box (fading in smoothly)
+            if (_selectAnim > 0.01f)
+            {
+                int chkA = (int)(255 * _selectAnim);
+                Gfx.FillRoundRect(g, chkRect, 6, Color.FromArgb(chkA, C.Accent));
+                Gfx.DrawRoundRect(g, chkRect, 6, Color.FromArgb(chkA, Color.White), 1f);
+
+                using (var p = new Pen(Color.FromArgb(chkA, Color.White), 2f))
                 {
-                    g.DrawLine(p, cx - 4, cy, cx - 1, cy + 3);
-                    g.DrawLine(p, cx - 1, cy + 3, cx + 4, cy - 3);
+                    p.StartCap = LineCap.Round;
+                    p.EndCap = LineCap.Round;
+                    p.LineJoin = LineJoin.Round;
+                    g.DrawLine(p, cx - 4, cy, cx - 1, cy + 4);
+                    g.DrawLine(p, cx - 1, cy + 4, cx + 5, cy - 3);
                 }
             }
-            else
-            {
-                Gfx.DrawRoundRect(g, chkRect, 5, _hov ? C.TextDim : C.TextDark, 1.5f);
-            }
 
-            int tx = 52;
+            int tx = 56;
             bool running = dc.IsRunning();
 
-            if (running)
-            {
-                using (var b = new SolidBrush(C.Green))
-                    g.FillEllipse(b, tx, (Height - 8) / 2, 8, 8);
-                tx += 14;
-            }
+            Color titleC = Color.FromArgb(
+                (int)(C.Text.R + (255 - C.Text.R) * _selectAnim),
+                (int)(C.Text.G + (255 - C.Text.G) * _selectAnim),
+                (int)(C.Text.B + (255 - C.Text.B) * _selectAnim));
 
             TextRenderer.DrawText(g, dc.Name, F.Title,
-                new Rectangle(tx, 8, Width - tx - 160, 20),
-                C.Text, TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
+                new Rectangle(tx, 12, Width - tx - 170, 20),
+                titleC, TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
 
-            string info = dc.Version + (running ? "  ·  Running" : "  ·  Closed");
+            int subX = tx;
+            if (running)
+            {
+                // Soft breathing green dot
+                float pulse = (float)(Math.Sin(Gfx.GlobalTick * 3.5) * 0.5 + 0.5);
+                int glowA = (int)(25 + 35 * pulse);
+                using (var gb = new SolidBrush(Color.FromArgb(glowA, C.Green)))
+                    g.FillEllipse(gb, tx - 2, 35, 10, 10);
+                using (var b = new SolidBrush(C.Green))
+                    g.FillEllipse(b, tx, 37, 6, 6);
+                subX += 13;
+            }
+
+            string info = dc.Version + (running ? " • Running" : " • Closed");
             TextRenderer.DrawText(g, info, F.Subtitle,
-                new Rectangle(tx, 28, Width - 200, 18),
+                new Rectangle(subX, 32, Width - subX - 170, 18),
                 running ? C.Green : C.TextDim, TextFormatFlags.Left);
 
             TextRenderer.DrawText(g, dc.ResourcesPath, F.MutedText,
-                new Rectangle(tx, 48, Width - 200, 14),
-                C.TextDim, TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
+                new Rectangle(tx, 52, Width - tx - 170, 14),
+                C.TextDark, TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
 
             string editionStr = "CUSTOM";
             Color edColor = C.TextDim;
             Color edBgColor = Color.FromArgb(20, C.TextDim);
-            if (dc.Name.Contains("Stable")) { editionStr = "STABLE"; edColor = C.Blue; edBgColor = Color.FromArgb(25, C.Blue); }
-            else if (dc.Name.Contains("Canary")) { editionStr = "CANARY"; edColor = C.Amber; edBgColor = Color.FromArgb(25, C.Amber); }
-            else if (dc.Name.Contains("PTB")) { editionStr = "PTB"; edColor = C.Accent; edBgColor = Color.FromArgb(25, C.Accent); }
-            else if (dc.Name.Contains("Dev")) { editionStr = "DEV"; edColor = C.Red; edBgColor = Color.FromArgb(25, C.Red); }
+            if (dc.Name.Contains("Stable")) { editionStr = "STABLE"; edColor = C.Blue; edBgColor = Color.FromArgb(30, C.Blue); }
+            else if (dc.Name.Contains("Canary")) { editionStr = "CANARY"; edColor = C.Amber; edBgColor = Color.FromArgb(30, C.Amber); }
+            else if (dc.Name.Contains("PTB")) { editionStr = "PTB"; edColor = C.Accent; edBgColor = Color.FromArgb(30, C.Accent); }
+            else if (dc.Name.Contains("Dev")) { editionStr = "DEV"; edColor = C.Red; edBgColor = Color.FromArgb(30, C.Red); }
 
             var edSize = TextRenderer.MeasureText(editionStr, F.MutedText);
-            bool injected = dc.IsInjected();
-            string statusStr = injected ? "ENDCORD PATCHED" : "VANILLA";
+            bool injected = dc.HasEndcord();
+            string statusStr = injected ? "ENDCORD" : "VANILLA";
             Color statusColor = injected ? C.Green : C.Amber;
-            Color statusBgColor = injected ? C.GreenBg : C.AmberBg;
+            Color statusBgColor = injected ? Color.FromArgb(25, C.Green) : Color.FromArgb(25, C.Amber);
             var statusSize = TextRenderer.MeasureText(statusStr, F.MutedText);
 
             int margin = 16;
-            int badgeY = (Height - 22) / 2;
+            int badgeY = (Height - 24) / 2;
 
-            int statusW = statusSize.Width + 14;
-            var statusRect = new Rectangle(Width - statusW - margin, badgeY, statusW, 22);
+            int statusW = statusSize.Width + 18;
+            var statusRect = new Rectangle(Width - statusW - margin, badgeY, statusW, 24);
 
-            int edW = edSize.Width + 14;
-            var edRect = new Rectangle(statusRect.Left - edW - 8, badgeY, edW, 22);
+            int edW = edSize.Width + 16;
+            var edRect = new Rectangle(statusRect.Left - edW - 8, badgeY, edW, 24);
 
-            Gfx.FillRoundRect(g, edRect, 5, edBgColor);
-            Gfx.DrawRoundRect(g, edRect, 5, Color.FromArgb(70, edColor), 1f);
+            // Edition capsule
+            Gfx.FillRoundRect(g, edRect, 6, edBgColor);
+            Gfx.DrawRoundRect(g, edRect, 6, Color.FromArgb(120, edColor), 1f);
             TextRenderer.DrawText(g, editionStr, F.MutedText, edRect, edColor,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
 
-            Gfx.FillRoundRect(g, statusRect, 5, statusBgColor);
-            Gfx.DrawRoundRect(g, statusRect, 5, Color.FromArgb(70, statusColor), 1f);
+            // Status capsule
+            Gfx.FillRoundRect(g, statusRect, 6, statusBgColor);
+            Gfx.DrawRoundRect(g, statusRect, 6, Color.FromArgb(120, statusColor), 1f);
             TextRenderer.DrawText(g, statusStr, F.MutedText, statusRect, statusColor,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
         }
@@ -1251,6 +1482,8 @@ namespace EndcordInstaller
     {
         bool _checked = false;
         bool _hov = false;
+        float _hoverAnim = 0f;
+        float _checkAnim = 0f;
 
         public event EventHandler CheckedChanged;
 
@@ -1274,29 +1507,47 @@ namespace EndcordInstaller
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
 
+            _hoverAnim = Gfx.Approach(_hoverAnim, _hov ? 1f : 0f, 0.12f);
+            _checkAnim = Gfx.Approach(_checkAnim, _checked ? 1f : 0f, 0.14f);
+
             var chkRect = new Rectangle(0, 3, 16, 16);
-            if (_checked)
+
+            // Unchecked base
+            Color borderC = Color.FromArgb(
+                (int)(C.TextDark.R + (C.TextDim.R - C.TextDark.R) * _hoverAnim),
+                (int)(C.TextDark.G + (C.TextDim.G - C.TextDark.G) * _hoverAnim),
+                (int)(C.TextDark.B + (C.TextDim.B - C.TextDark.B) * _hoverAnim));
+            Gfx.DrawRoundRect(g, chkRect, 4, borderC, 1.5f);
+
+            // Checked fill & checkmark (smoothly fading in)
+            if (_checkAnim > 0.01f)
             {
-                Gfx.FillRoundRect(g, chkRect, 4, C.Accent);
-                using (var p = new Pen(Color.White, 2f))
+                int chkA = (int)(255 * _checkAnim);
+                Gfx.FillRoundRect(g, chkRect, 4, Color.FromArgb(chkA, C.Accent));
+                using (var p = new Pen(Color.FromArgb(chkA, Color.White), 2f))
                 {
+                    p.StartCap = LineCap.Round;
+                    p.EndCap = LineCap.Round;
+                    p.LineJoin = LineJoin.Round;
                     g.DrawLine(p, 3, 10, 6, 13);
                     g.DrawLine(p, 6, 13, 12, 6);
                 }
             }
-            else
-            {
-                Gfx.DrawRoundRect(g, chkRect, 4, _hov ? C.TextDim : C.TextDark, 1.5f);
-            }
 
+            Color textC = Color.FromArgb(
+                (int)(C.TextDim.R + (255 - C.TextDim.R) * _hoverAnim),
+                (int)(C.TextDim.G + (255 - C.TextDim.G) * _hoverAnim),
+                (int)(C.TextDim.B + (255 - C.TextDim.B) * _hoverAnim));
             TextRenderer.DrawText(g, Text, F.LabelText, new Rectangle(24, 0, Width - 24, Height),
-                _hov ? C.Text : C.TextDim, TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
+                textC, TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
         }
     }
 
     class CustomLink : Control
     {
         bool _hov = false;
+        float _hoverAnim = 0f;
+
         public CustomLink(string text)
         {
             Text = text; Height = 20; Cursor = Cursors.Hand; DoubleBuffered = true;
@@ -1308,8 +1559,15 @@ namespace EndcordInstaller
         {
             var g = e.Graphics;
             g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+
+            _hoverAnim = Gfx.Approach(_hoverAnim, _hov ? 1f : 0f, 0.12f);
+
+            Color linkCol = Color.FromArgb(
+                (int)(C.TextDim.R + (C.AccentLight.R - C.TextDim.R) * _hoverAnim),
+                (int)(C.TextDim.G + (C.AccentLight.G - C.TextDim.G) * _hoverAnim),
+                (int)(C.TextDim.B + (C.AccentLight.B - C.TextDim.B) * _hoverAnim));
             TextRenderer.DrawText(g, Text, F.Subtitle, new Rectangle(0, 0, Width, Height),
-                _hov ? C.AccentLight : C.TextDim, TextFormatFlags.VerticalCenter | TextFormatFlags.Right);
+                linkCol, TextFormatFlags.VerticalCenter | TextFormatFlags.Right);
         }
     }
 
@@ -1339,6 +1597,24 @@ namespace EndcordInstaller
                 {
                     var pr = new Rectangle(0, (Height - 6) / 2, w, 6);
                     Gfx.FillGradientRoundRect(g, pr, 3, C.Accent, C.AccentLight, 0f);
+
+                    float sweep = (Gfx.GlobalTick * 150) % (Width + 60) - 30;
+                    if (sweep >= 0 && sweep < w)
+                    {
+                        var shimmerRect = new Rectangle((int)sweep, (Height - 6) / 2, 30, 6);
+                        try
+                        {
+                            using (var sb = new LinearGradientBrush(shimmerRect, Color.Transparent, Color.FromArgb(180, Color.White), 0f))
+                            {
+                                var blend = new ColorBlend(3);
+                                blend.Colors = new Color[] { Color.Transparent, Color.FromArgb(180, Color.White), Color.Transparent };
+                                blend.Positions = new float[] { 0f, 0.5f, 1f };
+                                sb.InterpolationColors = blend;
+                                g.FillRectangle(sb, shimmerRect);
+                            }
+                        }
+                        catch { }
+                    }
                 }
             }
         }
@@ -1348,14 +1624,17 @@ namespace EndcordInstaller
     {
         bool _hov = false;
         bool _down = false;
+        float _hoverAnim = 0f;
+        float _pressAnim = 0f;
+        float _clickRipple = 0f;
 
         public CustomActionButton(string text)
         {
-            Text = text; Height = 42; Cursor = Cursors.Hand; DoubleBuffered = true;
+            Text = text; Height = 44; Cursor = Cursors.Hand; DoubleBuffered = true;
             MouseEnter += (s, e) => { _hov = true; Invalidate(); };
             MouseLeave += (s, e) => { _hov = false; _down = false; Invalidate(); };
             MouseDown  += (s, e) => { _down = true; Invalidate(); };
-            MouseUp    += (s, e) => { _down = false; Invalidate(); };
+            MouseUp    += (s, e) => { _down = false; _clickRipple = 1f; Invalidate(); };
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -1364,19 +1643,86 @@ namespace EndcordInstaller
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
 
+            _hoverAnim = Gfx.Approach(_hoverAnim, _hov ? 1f : 0f, 0.12f);
+            _pressAnim = Gfx.Approach(_pressAnim, _down ? 1f : 0f, 0.2f);
+
+            // Click ripple fade out
+            if (_clickRipple > 0.01f)
+            {
+                _clickRipple -= 0.08f;
+                if (_clickRipple < 0f) _clickRipple = 0f;
+            }
+
             var r = new Rectangle(0, 0, Width - 1, Height - 1);
             if (!Enabled)
             {
-                Gfx.FillRoundRect(g, r, 8, C.Border);
+                Gfx.FillRoundRect(g, r, 9, C.Border);
                 TextRenderer.DrawText(g, Text, F.ButtonText, r, C.TextDark, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
                 return;
             }
 
-            Color c1 = _down ? C.AccentLo : (_hov ? C.AccentLight : C.Accent);
-            Color c2 = _down ? C.Accent : (_hov ? C.Accent : C.AccentLo);
+            float pulse = (float)(Math.Sin(Gfx.GlobalTick * 3) * 0.5 + 0.5);
+            int glowA = (int)((15 + 10 * pulse) + (35 + 20 * pulse) * _hoverAnim + 30 * _clickRipple);
+            Gfx.DrawGlow(g, r, 10, Color.FromArgb(glowA, C.AccentLight), 2, 2f);
 
-            Gfx.FillGradientRoundRect(g, r, 8, c1, c2, 45f);
-            TextRenderer.DrawText(g, Text, F.ButtonText, r, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            // Interpolate colors smoothly between normal, hover, and pressed states
+            Color normalC1 = C.Accent;
+            Color hoverC1 = C.AccentLight;
+            Color pressC1 = C.AccentLo;
+
+            Color normalC2 = C.AccentLo;
+            Color hoverC2 = C.Accent;
+            Color pressC2 = C.Accent;
+
+            int c1R = (int)(normalC1.R + (hoverC1.R - normalC1.R) * _hoverAnim + (pressC1.R - normalC1.R) * _pressAnim);
+            int c1G = (int)(normalC1.G + (hoverC1.G - normalC1.G) * _hoverAnim + (pressC1.G - normalC1.G) * _pressAnim);
+            int c1B = (int)(normalC1.B + (hoverC1.B - normalC1.B) * _hoverAnim + (pressC1.B - normalC1.B) * _pressAnim);
+            Color c1 = Color.FromArgb(Math.Max(0, Math.Min(255, c1R)), Math.Max(0, Math.Min(255, c1G)), Math.Max(0, Math.Min(255, c1B)));
+
+            int c2R = (int)(normalC2.R + (hoverC2.R - normalC2.R) * _hoverAnim + (pressC2.R - normalC2.R) * _pressAnim);
+            int c2G = (int)(normalC2.G + (hoverC2.G - normalC2.G) * _hoverAnim + (pressC2.G - normalC2.G) * _pressAnim);
+            int c2B = (int)(normalC2.B + (hoverC2.B - normalC2.B) * _hoverAnim + (pressC2.B - normalC2.B) * _pressAnim);
+            Color c2 = Color.FromArgb(Math.Max(0, Math.Min(255, c2R)), Math.Max(0, Math.Min(255, c2G)), Math.Max(0, Math.Min(255, c2B)));
+
+            Gfx.FillGradientRoundRect(g, r, 10, c1, c2, 45f);
+
+            // Click ripple / flash wave fading out
+            if (_clickRipple > 0.01f)
+            {
+                int flashA = (int)(45 * _clickRipple);
+                Gfx.FillRoundRect(g, r, 10, Color.FromArgb(flashA, Color.White));
+            }
+
+            if (_hoverAnim > 0.02f)
+            {
+                float sweep = (Gfx.GlobalTick * 160) % (Width + 80) - 40;
+                if (sweep >= 0 && sweep < Width)
+                {
+                    int shimmerAlpha = (int)(50 * _hoverAnim);
+                    var beamRect = new Rectangle((int)sweep, 0, 40, Height);
+                    try
+                    {
+                        using (var sb = new LinearGradientBrush(beamRect, Color.Transparent, Color.FromArgb(shimmerAlpha, Color.White), 0f))
+                        {
+                            var blend = new ColorBlend(3);
+                            blend.Colors = new Color[] { Color.Transparent, Color.FromArgb(shimmerAlpha, Color.White), Color.Transparent };
+                            blend.Positions = new float[] { 0f, 0.5f, 1f };
+                            sb.InterpolationColors = blend;
+                            using (var path = Gfx.RoundRect(r, 10))
+                            {
+                                g.SetClip(path);
+                                g.FillRectangle(sb, beamRect);
+                                g.ResetClip();
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+
+            int textOffsetY = _pressAnim > 0.5f ? 1 : 0;
+            var textRect = new Rectangle(r.X, r.Y + textOffsetY, r.Width, r.Height);
+            TextRenderer.DrawText(g, Text, F.ButtonText, textRect, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
         }
     }
 

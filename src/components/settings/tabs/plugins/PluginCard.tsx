@@ -20,9 +20,10 @@ interface PluginCardProps extends React.HTMLProps<HTMLDivElement> {
     disabled: boolean;
     onRestartNeeded(name: string, key: string): void;
     isNew?: boolean;
+    isPopular?: boolean;
 }
 
-export function PluginCard({ plugin, disabled, onRestartNeeded, onMouseEnter, onMouseLeave, isNew }: PluginCardProps) {
+export function PluginCard({ plugin, disabled, onRestartNeeded, onMouseEnter, onMouseLeave, isNew, isPopular }: PluginCardProps) {
     const settings = Settings.plugins[plugin.name];
 
     const isEnabled = () => isPluginEnabled(plugin.name);
@@ -84,6 +85,7 @@ export function PluginCard({ plugin, disabled, onRestartNeeded, onMouseEnter, on
             name={plugin.name}
             description={plugin.description}
             isNew={isNew}
+            isPopular={isPopular}
             enabled={isEnabled()}
             setEnabled={toggleEnabled}
             disabled={disabled}

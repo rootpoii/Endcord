@@ -71,7 +71,7 @@ const settings = definePluginSettings({
     disableLoggers: {
         type: OptionType.BOOLEAN,
         description: "Disables Discords loggers",
-        default: false,
+        default: true,
         restartNeeded: true
     },
     disableSpotifyLogger: {
@@ -109,6 +109,7 @@ export default definePlugin({
     description: "Disables annoying console messages/errors",
     authors: [Devs.Nuckyz, Devs.sadan],
     tags: ["Developers", "Console", "Utility"],
+    enabledByDefault: true,
     settings,
 
     startAt: StartAt.Init,
@@ -208,6 +209,13 @@ export default definePlugin({
             replacement: {
                 match: /(?<=&&)(?=console)/,
                 replace: "$self.shouldLog(arguments[0],arguments[1])&&"
+            }
+        },
+        {
+            find: "Cannot find the corresponding SKU to the user's premium type ",
+            replacement: {
+                match: /\i\.warn\(`Cannot find the corresponding SKU to the user's premium type \$\{[^`]+\.premiumType\}`\),/,
+                replace: ""
             }
         },
         {

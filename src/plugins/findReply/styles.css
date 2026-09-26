@@ -1,0 +1,18 @@
+.vc-findreply-paginator {
+    margin-top: inherit !important;
+}
+
+.vc-findreply-close {
+    align-items: inherit !important;
+    line-height: 0 !important;
+}
+
+.vc-findreply-div {
+    background-color: var(--background-base-lowest);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: fit-content;
+    padding: 10px;
+    gap: 10px;
+}

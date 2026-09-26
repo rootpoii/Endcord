@@ -12,3 +12,12 @@ export function relaunch() {
     else
         location.reload();
 }
+
+
+export function showItemInFolder(path: string) {
+    if (typeof DiscordNative !== "undefined" && DiscordNative?.fileManager?.showItemInFolder) {
+        DiscordNative.fileManager.showItemInFolder(path);
+    } else if (typeof EndcordNative !== "undefined" && (EndcordNative as any)?.showItemInFolder) {
+        (EndcordNative as any).showItemInFolder(path);
+    }
+}

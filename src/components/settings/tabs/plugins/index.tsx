@@ -34,6 +34,27 @@ import { UIElementsButton } from "./UIElements";
 export const cl = classNameFactory("vc-plugins-");
 export const logger = new Logger("PluginSettings", "#a6d189");
 
+const POPULAR_PLUGIN_ORDER = [
+    "CustomProfile",
+    "MessageLogger",
+    "HideEndcord",
+    "FakeNitro",
+    "SmoothType",
+    "ViewIcons",
+    "ThemeLibrary",
+    "oneko",
+    "PlatformIndicators",
+    "RelationshipNotifier",
+    "SilentTyping",
+] as const;
+
+const POPULAR_PLUGINS = new Set<string>(POPULAR_PLUGIN_ORDER);
+
+function popularRank(name: string) {
+    const index = POPULAR_PLUGIN_ORDER.indexOf(name as typeof POPULAR_PLUGIN_ORDER[number]);
+    return index === -1 ? Number.POSITIVE_INFINITY : index;
+}
+
 function ReloadRequiredCard({ required }: { required: boolean; }) {
     return (
         <Card variant={required ? "warning" : "normal"} className={cl("info-card")}>
@@ -146,7 +167,10 @@ function PluginSettings() {
     }, []);
 
     const sortedPlugins = useMemo(() =>
-        Object.values(Plugins).sort((a, b) => a.name.localeCompare(b.name)),
+        Object.values(Plugins).sort((a, b) => {
+            const rank = popularRank(a.name) - popularRank(b.name);
+            return rank !== 0 ? rank : a.name.localeCompare(b.name);
+        }),
         []
     );
 
@@ -245,6 +269,7 @@ function PluginSettings() {
                     disabled={false}
                     plugin={p}
                     isNew={newPlugins?.includes(p.name)}
+                    isPopular={POPULAR_PLUGINS.has(p.name)}
                     key={p.name}
                 />
             );
@@ -340,3 +365,13 @@ function makeDependencyList(deps: string[]) {
 }
 
 export default wrapTab(PluginSettings, "Plugins");
+
+
+export function PluginDependencyList({ deps }: { deps: string[]; }) {
+    return (
+        <>
+            <Paragraph>This plugin is required by:</Paragraph>
+            {deps.map((dep: string) => <Paragraph key={dep} className={cl("dep-text")}>{dep}</Paragraph>)}
+        </>
+    );
+}

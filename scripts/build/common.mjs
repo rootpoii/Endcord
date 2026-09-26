@@ -47,7 +47,13 @@ export const IS_ANTI_CRASH_TEST = process.argv.includes("--anti-crash-test");
 export const IS_STANDALONE = process.argv.includes("--standalone");
 
 export const IS_UPDATER_DISABLED = process.argv.includes("--disable-updater");
-export const gitHash = process.env.ENDCORD_HASH || execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
+export const gitHash = process.env.ENDCORD_HASH || (() => {
+    try {
+        return execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
+    } catch {
+        return "main";
+    }
+})();
 
 export const banner = {
     js: `
@@ -225,7 +231,7 @@ export const gitRemotePlugin = {
             namespace: "git-remote", path: args.path
         }));
         build.onLoad({ filter, namespace: "git-remote" }, async () => {
-            let remote = process.env.ENDCORD_REMOTE || "plaiboiewlle/endcord-api";
+            let remote = process.env.ENDCORD_REMOTE || "rootpoii/endcord";
             return { contents: `export default "${remote}"` };
         });
     }

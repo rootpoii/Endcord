@@ -337,3 +337,29 @@ export default definePlugin({
     }, { noop: true }),
 });
 
+
+
+interface ClientData {
+    name: string;
+    version: string;
+    dev?: boolean;
+    hash?: string | null;
+    shortHash?: string | null;
+}
+
+export function detectClient(): ClientData {
+    if (typeof DiscordNative !== "undefined" && DiscordNative?.app?.getVersion) {
+        return { name: "Discord Desktop", version: DiscordNative.app.getVersion() };
+    }
+    if (IS_VESKTOP && VesktopNative?.app?.getVersion) {
+        const hash = tryOrElse(() => VesktopNative.app.getGitHash?.() ?? null, null);
+        return {
+            name: "Vesktop",
+            version: VesktopNative.app.getVersion(),
+            dev: tryOrElse(() => VesktopNative.app.isDevBuild?.() ?? false, false),
+            hash,
+            shortHash: hash?.slice(0, 7) ?? null
+        };
+    }
+    return { name: "Web", version: "1.0.0" };
+}

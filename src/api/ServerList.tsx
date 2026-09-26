@@ -10,30 +10,38 @@ import { ComponentType } from "react";
 export const enum ServerListRenderPosition {
     Above,
     In,
+    Below,
 }
 
-const componentsAbove = new Set<ComponentType>();
-const componentsBelow = new Set<ComponentType>();
+const componentsAbove = new Map<ComponentType, number>();
+const componentsIn = new Map<ComponentType, number>();
+const componentsBelow = new Map<ComponentType, number>();
 
-function getRenderFunctions(position: ServerListRenderPosition) {
-    return position === ServerListRenderPosition.Above ? componentsAbove : componentsBelow;
+function getRenderMap(position: ServerListRenderPosition) {
+    switch (position) {
+        case ServerListRenderPosition.Above:
+            return componentsAbove;
+        case ServerListRenderPosition.In:
+            return componentsIn;
+        case ServerListRenderPosition.Below:
+            return componentsBelow;
+    }
 }
 
-export function addServerListElement(position: ServerListRenderPosition, renderFunction: ComponentType) {
-    getRenderFunctions(position).add(renderFunction);
+export function addServerListElement(position: ServerListRenderPosition, renderFunction: ComponentType, priority = 0) {
+    getRenderMap(position).set(renderFunction, priority);
 }
 
 export function removeServerListElement(position: ServerListRenderPosition, renderFunction: ComponentType) {
-    getRenderFunctions(position).delete(renderFunction);
+    getRenderMap(position).delete(renderFunction);
 }
 
 export const renderAll = (position: ServerListRenderPosition) => {
-    return Array.from(
-        getRenderFunctions(position),
-        (Component, i) => (
+    return Array.from(getRenderMap(position).entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([Component], i) => (
             <ErrorBoundary noop key={i}>
                 <Component />
             </ErrorBoundary>
-        )
-    );
+        ));
 };

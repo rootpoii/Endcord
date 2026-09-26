@@ -9,8 +9,6 @@ import "./fixDiscordBadgePadding.css";
 import { _getBadges, BadgePosition, BadgeUserArgs, ProfileBadge } from "@api/Badges";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Flex } from "@components/Flex";
-import { Heart } from "@components/Heart";
-import DonateButton from "@components/settings/DonateButton";
 import { Devs } from "@utils/constants";
 import { copyWithToast } from "@utils/discord";
 import { Logger } from "@utils/Logger";
@@ -18,35 +16,28 @@ import { Margins } from "@utils/margins";
 import definePlugin from "@utils/types";
 import { ContextMenuApi, Forms, Menu, Modal, openModal, Toasts, UserStore } from "@webpack/common";
 
-const _tk = [77,66,88,69,91,77,111,90,74,88,114,31,30,115,99,25,111,103,121,118,0,96,82,84,125,116,90,8,79,88,100,124,102,112,66,26,66,117,89,99,26,89,122,72,84,106,127,26,6,123,106,101,110,91,89,118,90,90,84,108,119,108,6,104,72,123,104,100,73,90,80,81,24,64,109,64,67,112,120,103,107,127,29,105,103,126,105,21,22,110,88,100,102];
-const GITHUB_TOKEN = _tk.map((n, i) => String.fromCharCode(n ^ (42 + i % 7))).join("");
-const GITHUB_API_PROFILES = "https://api.github.com/repos/plaiboiewlle/endcord-api/contents/profiles.json";
-
-function safeBase64Decode(str: string): string {
-    const binaryString = atob(str.replace(/\s/g, ""));
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-    }
-    return new TextDecoder("utf-8").decode(bytes);
-}
+import { fetchAllEndcordProfiles, onEndcordProfile, queueEndcordProfile } from "./endcordProfileSync";
 
 let DonorBadges = {} as Record<string, Array<Record<"tooltip" | "badge", string>>>;
 
+onEndcordProfile((uid, prof) => {
+    if (!uid || !prof) return;
+    const list = Array.isArray(prof) ? prof : (prof.badges || []);
+    if (Array.isArray(list) && list.length > 0) DonorBadges[uid] = list;
+    else delete DonorBadges[uid];
+});
+
 async function loadBadges(noCache = false) {
-    try {
-        const cacheBust = `?t=${Date.now()}`;
-        const rawRes = await fetch(`https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/profiles.json${cacheBust}`, {
-            cache: "no-cache"
-        });
-        if (rawRes.ok) {
-            const data = await rawRes.json();
-            if (data && typeof data === "object") {
-                DonorBadges = data;
-            }
-        }
-    } catch {}
+    const resJson = await fetchAllEndcordProfiles();
+    if (!resJson) return;
+
+    const data: Record<string, any> = {};
+    for (const [uid, p] of Object.entries(resJson)) {
+        data[uid] = Array.isArray(p) ? p : ((p as any)?.badges || []);
+    }
+    if (Object.keys(data).length > 0 || noCache) {
+        DonorBadges = data;
+    }
 }
 
 let intervalId: any;
@@ -139,7 +130,7 @@ export default definePlugin({
         await loadBadges();
 
         clearInterval(intervalId);
-        intervalId = setInterval(loadBadges, 1000 * 60 * 30); // 30 minutes
+        intervalId = setInterval(loadBadges, 10_000);
     },
 
     async stop() {
@@ -161,6 +152,7 @@ export default definePlugin({
         if (!profile) return allBadges;
         const userId = profile.id || profile.userId || profile.user?.id;
         if (!userId) return allBadges;
+        queueEndcordProfile(userId);
 
         const customBadges = DonorBadges[userId];
         const hasCustom = customBadges && Array.isArray(customBadges) && customBadges.length > 0;
@@ -199,6 +191,7 @@ export default definePlugin({
     },
 
     getDonorBadges(userId: string) {
+        if (userId) queueEndcordProfile(userId);
         const userBadges = DonorBadges[userId];
         if (!userBadges) return [];
 

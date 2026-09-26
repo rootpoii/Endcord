@@ -1,0 +1,30 @@
+.vc-friendship-ranks-flex {
+    width: 100%;
+    justify-content: center;
+    height: 18px;
+}
+
+.vc-friendship-ranks-img {
+    display: flex;
+    width: 100%;
+    text-align: center;
+    place-content: center center;
+    margin: 0;
+    gap: 4px;
+}
+
+.vc-friendship-ranks-text {
+    padding: 1em;
+    text-align: center;
+}
+
+.vc-friendship-ranks-decoration {
+    vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
+}
+
+.vc-friendship-ranks-icon {
+    width: 16px;
+    height: 16px;
+}

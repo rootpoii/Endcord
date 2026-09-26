@@ -40,6 +40,7 @@
         "@ffmpeg/util": "^0.12.1",
         "@intrnl/xxhash64": "^0.1.2",
         "@song-spotlight/api": "^2.2.0",
+        "@streamparser/json": "^0.0.26",
         "@vap/core": "0.0.12",
         "@vap/shiki": "0.10.5",
         "fflate": "^0.8.3",
@@ -50,11 +51,13 @@
         "md5": "^2.3.0",
         "monaco-editor": "^0.55.1",
         "nanoid": "^5.1.16",
+        "native-file-system-adapter": "^3.0.1",
         "virtual-merge": "^1.0.1",
         "yaml-js": "^0.3.1"
     },
     "devDependencies": {
         "@endcord/discord-types": "link:packages/discord-types",
+        "@vencord/discord-types": "link:packages/discord-types",
         "@stylistic/eslint-plugin": "^5.10.0",
         "@types/chrome": "^0.2.0",
         "@types/lodash": "^4.17.24",

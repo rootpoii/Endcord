@@ -15,7 +15,7 @@ import { findComponentByCodeLazy } from "@webpack";
 import { Popout, useEffect, useRef, useState } from "@webpack/common";
 import type { PropsWithChildren } from "react";
 
-import { renderPopout } from "./menu";
+import { renderPopout, startUpdateChecker, stopUpdateChecker } from "./menu";
 
 const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_BOTTOM,", 'position:"bottom"');
 
@@ -100,5 +100,13 @@ export default definePlugin({
                 </ErrorBoundary>
             </>
         );
+    },
+
+    start() {
+        startUpdateChecker();
+    },
+
+    stop() {
+        stopUpdateChecker();
     },
 });

@@ -66,3 +66,5 @@ export const EndcordDevs = Devs;
 export const EquicordDevs = Devs;
 
 
+
+export const GUILD_IDS = [ENDCORD_GUILD_ID];

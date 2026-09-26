@@ -112,3 +112,15 @@ export const Animations = mapMangledModuleLazy(".assign({colorNames:", {
     Transition: filters.componentByCode('["items","children"]', ",null,"),
     animated: filters.byProps("div", "text")
 });
+
+export let RoleMemberPopout: t.RoleMemberPopout = () => null;
+
+export function setRoleMemberPopout(component: t.RoleMemberPopout) {
+    RoleMemberPopout = component;
+}
+
+export let NewCustomizationSection: t.ComponentSection = () => null;
+
+export function setNewCustomizationSection(component: t.ComponentSection) {
+    NewCustomizationSection = component;
+}

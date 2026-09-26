@@ -273,8 +273,8 @@ export default definePlugin({
                 },
                 {
                     // Disallow the emoji for premium locked if the intention doesn't allow it
-                    match: /!(\i\.\i\.canUseEmojisEverywhere\(\i\))/,
-                    replace: m => `(${m}&&!${IS_BYPASSEABLE_INTENTION})`
+                    match: /(?<=!\(\i\|\|)\i\.\i\.canUseEmojisEverywhere\(\i\)/,
+                    replace: check => `(${check}||${IS_BYPASSEABLE_INTENTION})`
                 },
                 {
                     // Allow animated emojis to be used if the intention allows it
@@ -429,6 +429,21 @@ export default definePlugin({
                 match: /(?<=type:"(?:SOUNDBOARD_SOUNDS_RECEIVED|GUILD_SOUNDBOARD_SOUND_CREATE|GUILD_SOUNDBOARD_SOUND_UPDATE|GUILD_SOUNDBOARD_SOUNDS_UPDATE)".+?available:)\i\.available/g,
                 replace: "true"
             }
+        },
+        // Free accounts have no premium SKU. The emoji picker calls this once per emoji,
+        // and each warn() freezes the client. Drop the log and keep the original false return.
+        {
+            find: "Cannot find the corresponding SKU to the user's premium type ",
+            replacement: [
+                {
+                    match: /\i\.warn\(`Cannot find the corresponding SKU to the user's premium type \$\{[^`]+\.premiumType\}`\),/,
+                    replace: ""
+                },
+                {
+                    match: /\i\.warn\(`Cannot find the corresponding product catalog entry to the user's SKU \$\{[^`]+\.premiumType\}`\),/,
+                    replace: ""
+                }
+            ]
         }
     ],
 

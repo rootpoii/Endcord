@@ -16,7 +16,7 @@ import type { ReactNode } from "react";
 
 import { settings } from ".";
 
-const ENDCORD_VERSION_URL = "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/version.json";
+const ENDCORD_VERSION_URL = "https://raw.githubusercontent.com/rootpoii/endcord/main/version.json";
 const LS_LAST_SEEN_UPDATE = "endcord_last_seen_updatedAt";
 let _updateAvailable = false;
 let _latestVersion = "";
@@ -51,9 +51,21 @@ async function checkForUpdates(showToastIfNew = false) {
     } catch { }
 }
 
-// Check on startup after 5 seconds, then every 30 minutes
-setTimeout(() => checkForUpdates(true), 5000);
-setInterval(() => checkForUpdates(true), 30 * 60 * 1000);
+let _updateTimer: ReturnType<typeof setTimeout> | null = null;
+let _updateInterval: ReturnType<typeof setInterval> | null = null;
+
+export function startUpdateChecker() {
+    stopUpdateChecker();
+    _updateTimer = setTimeout(() => checkForUpdates(true), 5000);
+    _updateInterval = setInterval(() => checkForUpdates(true), 30 * 60 * 1000);
+}
+
+export function stopUpdateChecker() {
+    if (_updateTimer) clearTimeout(_updateTimer);
+    if (_updateInterval) clearInterval(_updateInterval);
+    _updateTimer = null;
+    _updateInterval = null;
+}
 
 
 

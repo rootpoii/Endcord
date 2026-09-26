@@ -35,14 +35,14 @@ const nodeDir = path.join(rootDir, "node-v22");
 execSync(`"${pnpmCmd}" buildStandalone`, { 
     cwd: rootDir, 
     stdio: "inherit",
-    env: { ...process.env, ENDCORD_HASH: buildHash, ENDCORD_REMOTE: "plaiboiewlle/endcord-api", PATH: `${nodeDir};${process.env.PATH}` }
+    env: { ...process.env, ENDCORD_HASH: buildHash, ENDCORD_REMOTE: "rootpoii/endcord", PATH: `${nodeDir};${process.env.PATH}` }})
 });
 
 // 2.5. Compile the C# Installer GUI with embedded assets
 console.log("🛠️ Compiling EndcordInstaller.exe with embedded assets...");
 try {
     const cscPath = "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe";
-    const cscCmd = `"${cscPath}" /resource:dist\\patcher.js /resource:dist\\patcher.js.map /resource:dist\\preload.js /resource:dist\\preload.js.map /resource:dist\\renderer.js /resource:dist\\renderer.js.map /resource:dist\\renderer.css /resource:dist\\renderer.css.map /resource:app_logo.png /out:EndcordInstaller.exe /target:winexe /win32icon:app_icon.ico InstallerGUI.cs`;
+    const cscCmd = `"${cscPath}" /resource:dist\\patcher.js /resource:dist\\preload.js /resource:dist\\renderer.js /resource:dist\\renderer.css /resource:app_logo.png /out:EndcordInstaller.exe /target:winexe /win32icon:app_icon.ico /win32manifest:app.manifest /optimize+ /debug- InstallerGUI.cs`;
     execSync(cscCmd, { cwd: rootDir, stdio: "inherit" });
     console.log("✅ Compiled EndcordInstaller.exe successfully!");
 
@@ -87,17 +87,7 @@ for (const file of distFiles) {
     }
 }
 
-// Copy to APPDATA
-try {
-    const appDataDir = path.join(process.env.APPDATA || "", "Endcord", "dist");
-    if (appDataDir && fs.existsSync(path.dirname(appDataDir))) {
-        if (!fs.existsSync(appDataDir)) fs.mkdirSync(appDataDir, { recursive: true });
-        for (const file of distFiles) {
-            fs.copyFileSync(path.join(distDir, file), path.join(appDataDir, file));
-        }
-        console.log("  └─ Copied dist to AppData/Endcord/dist");
-    }
-} catch (e) {}
+// Do not copy into installed AppData — installer ships dist.
 
 // Copy EndcordInstaller.exe and EndcordInstaller.zip if present
 const installerFiles = ["EndcordInstaller.exe", "EndcordInstaller.rar", "EndcordInstaller.zip"];
@@ -123,10 +113,10 @@ const versionData = {
     hash: buildHash,
     updatedAt: timestamp,
     date: dateStr,
-    downloadUrl: "https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/renderer.js",
+    downloadUrl: "https://raw.githubusercontent.com/rootpoii/endcord/main/dist/renderer.js",
     assets: copiedAssets.map(asset => ({
         ...asset,
-        url: `https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/dist/${asset.name}`
+        url: `https://raw.githubusercontent.com/rootpoii/endcord/main/dist/${asset.name}`
     }))
 };
 
@@ -145,11 +135,15 @@ if (fs.existsSync(desktopApiDir)) {
 console.log(`✅ Updated ${versionJsonPath}`);
 
 // 6. Push assets to GitHub in 1 single atomic commit via Git Data API (0% 409 conflict guarantee!)
-const GITHUB_REPO = "plaiboiewlle/endcord-api";
-const GITHUB_TOKEN = ["github", "pat", "11CI2CJWY0NYwm1rkHlT1b", "7p14GMYjr9LCs6hZp6pd6Q5FhF8avh88taBaJiPvFCJH5NDRMCVHhFFzmKz"].join("_");
+const GITHUB_REPO = "rootpoii/endcord";
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
 const GITHUB_API_BASE = `https://api.github.com/repos/${GITHUB_REPO}`;
 
 async function deployReleaseToGitHub() {
+    if (!GITHUB_TOKEN) {
+        console.log("⚠️ Skipping GitHub upload: set GITHUB_TOKEN in the environment.");
+        return;
+    }
     console.log("\n📤 Uploading release assets to GitHub (Single Atomic Commit)...");
 
     const headers = {

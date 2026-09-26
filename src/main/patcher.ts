@@ -13,58 +13,16 @@ import { IS_VANILLA } from "./utils/constants";
 
 console.log("[Endcord] Starting up...");
 
-// Suppress Electron errors when loading Discord's original app.asar after app is ready
-try {
-    if (electron?.protocol?.registerSchemesAsPrivileged) {
-        const origReg = electron.protocol.registerSchemesAsPrivileged;
-        electron.protocol.registerSchemesAsPrivileged = function (...args) {
-            try {
-                return origReg.apply(this, args);
-            } catch { }
-        };
-    }
-    if (electron?.ipcMain?.handle) {
-        const origHandle = electron.ipcMain.handle;
-        electron.ipcMain.handle = function (channel: string, listener: any) {
-            try {
-                return origHandle.call(this, channel, listener);
-            } catch (err: any) {
-                if (err?.message?.includes("second handler")) {
-                    try {
-                        this.removeHandler(channel);
-                        return origHandle.call(this, channel, listener);
-                    } catch { }
-                } else {
-                    throw err;
-                }
-            }
-        };
-    }
-    if (app) {
-        const origIsReady = app.isReady;
-        app.isReady = () => false;
-        setTimeout(() => {
-            try { app.isReady = origIsReady; } catch { }
-        }, 1000);
-    }
-} catch { }
-
 import { existsSync } from "fs";
 
 // Our injector file at app/index.js
 const injectorPath = require.main!.filename;
 
-// The original app.asar
-const resPath = process.resourcesPath || join(dirname(injectorPath), "..", "..");
-let asarPath = join(resPath, "_app.asar");
+// Locate original Discord asar file
+const resDir = join(dirname(injectorPath), "..");
+let asarPath = join(resDir, "_app.asar");
 if (!existsSync(asarPath)) {
-    asarPath = join(resPath, "app.asar");
-}
-if (!existsSync(asarPath)) {
-    asarPath = join(dirname(injectorPath), "..", "_app.asar");
-    if (!existsSync(asarPath)) {
-        asarPath = join(dirname(injectorPath), "..", "app.asar");
-    }
+    asarPath = join(resDir, "app.asar");
 }
 
 const discordPkg = require(join(asarPath, "package.json"));
@@ -175,10 +133,16 @@ if (!IS_VANILLA) {
     const originalAppend = app.commandLine.appendSwitch;
     app.commandLine.appendSwitch = function (...args) {
         if (args[0] === "disable-features") {
-            const disabledFeatures = new Set((args[1] ?? "").split(","));
+            const disabledFeatures = new Set((args[1] ?? "").split(",").filter(Boolean));
             disabledFeatures.add("WidgetLayering");
             disabledFeatures.add("UseEcoQoSForBackgroundProcess");
-            args[1] += [...disabledFeatures].join(",");
+            disabledFeatures.add("CalculateNativeWinOcclusion");
+            disabledFeatures.add("IntensiveWakeUpThrottling");
+            args[1] = [...disabledFeatures].join(",");
+        } else if (args[0] === "enable-features") {
+            const enabledFeatures = new Set((args[1] ?? "").split(",").filter(Boolean));
+            enabledFeatures.add("CanvasOopRasterization");
+            args[1] = [...enabledFeatures].join(",");
         }
         return originalAppend.apply(this, args);
     };
@@ -191,6 +155,11 @@ if (!IS_VANILLA) {
     app.commandLine.appendSwitch("disable-renderer-backgrounding");
     app.commandLine.appendSwitch("disable-background-timer-throttling");
     app.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
+    app.commandLine.appendSwitch("ignore-gpu-blocklist");
+    app.commandLine.appendSwitch("enable-gpu-rasterization");
+    app.commandLine.appendSwitch("enable-zero-copy");
+    app.commandLine.appendSwitch("enable-native-gpu-memory-buffers");
+    app.commandLine.appendSwitch("enable-features", "CanvasOopRasterization");
 } else {
     console.log("[Endcord] Running in vanilla mode. Not loading Endcord");
 }

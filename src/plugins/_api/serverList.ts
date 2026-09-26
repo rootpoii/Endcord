@@ -21,10 +21,16 @@ export default definePlugin({
         },
         {
             find: ".setGuildsTree(",
-            replacement: {
-                match: /(?<=#{intl::SERVERS}\),gap:"xs",children:)\i\.map\(.{0,50}\.length\)/,
-                replace: "Endcord.Api.ServerList.renderAll(Endcord.Api.ServerList.ServerListRenderPosition.In).concat($&)"
-            }
+            replacement: [
+                {
+                    match: /(?<=#{intl::SERVERS}\),gap:"xs",children:)\i\.map\(.{0,50}\.length\)/,
+                    replace: "Endcord.Api.ServerList.renderAll(Endcord.Api.ServerList.ServerListRenderPosition.In).concat($&)"
+                },
+                {
+                    match: /lastTargetNode.{0,25}\?null:\i,/,
+                    replace: "$&...Endcord.Api.ServerList.renderAll(Endcord.Api.ServerList.ServerListRenderPosition.Below),"
+                }
+            ]
         }
     ]
 });

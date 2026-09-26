@@ -36,20 +36,25 @@ function patchLatest() {
         if (latestVersion === currentVersion) return;
 
         const resources = join(discordPath, latestVersion, "resources");
-        const app = join(resources, "app.asar");
-        const _app = join(resources, "_app.asar");
+        const origAsar = join(resources, "app.asar");
+        const backupAsar = join(resources, "_app.asar");
+        const appDir = join(resources, "app");
 
-        if (!existsSync(app) || statSync(app).isDirectory()) return;
+        if (!existsSync(origAsar) || statSync(origAsar).isDirectory()) return;
 
         console.info("[Endcord] Detected Host Update. Repatching...");
 
-        renameSync(app, _app);
-        mkdirSync(app);
-        writeFileSync(join(app, "package.json"), JSON.stringify({
+        renameSync(origAsar, backupAsar);
+        if (existsSync(appDir)) {
+            // Directory exists
+        } else {
+            mkdirSync(appDir);
+        }
+        writeFileSync(join(appDir, "package.json"), JSON.stringify({
             name: "discord",
             main: "index.js"
         }));
-        writeFileSync(join(app, "index.js"), `require(${JSON.stringify(join(__dirname, "patcher.js"))});`);
+        writeFileSync(join(appDir, "index.js"), `require(${JSON.stringify(join(__dirname, "patcher.js"))});`);
     } catch (err) {
         console.error("[Endcord] Failed to repatch latest host update", err);
     }

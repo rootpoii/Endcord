@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Endcord, a Discord client mod
  * Copyright (c) 2025 Vendicated and contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -56,6 +56,7 @@ export const CspPolicies: PolicyMap = {
     "ws.audioscrobbler.com": ConnectSrc, // Last.fm API
     "translate-pa.googleapis.com": ConnectSrc, // Google Translate API
     "*.endcord.com": ImageSrc, // VenCloud (endcord.com) and Badges (badges.endcord.com)
+    "api.endcord.com": ConnectSrc, // CustomProfile + badge sync
     "manti.vendicated.dev": ImageSrc, // ReviewDB API
     "decor.fieryflames.dev": ConnectSrc, // Decor API
     "ugc.decor.fieryflames.dev": ImageSrc, // Decor CDN
@@ -63,6 +64,8 @@ export const CspPolicies: PolicyMap = {
     "dearrow-thumb.ajay.app": ImageSrc, // Dearrow Thumbnail CDN
     "usrbg.is-hardly.online": ImageSrc, // USRBG API
     "icons.duckduckgo.com": ImageSrc, // DuckDuckGo Favicon API (Reverse Image Search)
+
+    "themes.equicord.org": ImageAndCssSrc, // Theme Library API, previews, and online theme CSS
 };
 
 const findHeader = (headers: PolicyMap, headerName: Lowercase<string>) => {

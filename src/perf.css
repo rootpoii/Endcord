@@ -1,0 +1,22 @@
+/* Always-on compositor hints. Avoids theme-breaking filters and full-page contain. */
+
+#app-mount {
+    text-rendering: optimizeSpeed;
+}
+
+div[class*="messagesWrapper"] {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+li[id^="chat-messages-"] {
+    contain: layout style;
+}
+
+div[data-list-item-id^="members-"] {
+    contain: layout style;
+}
+
+div[data-list-item-id^="channels___"] {
+    contain: layout style;
+}

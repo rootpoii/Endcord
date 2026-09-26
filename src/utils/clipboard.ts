@@ -7,3 +7,15 @@
 export function copyToClipboard(text: string): Promise<void> {
     return IS_DISCORD_DESKTOP ? DiscordNative.clipboard.copy(text) : navigator.clipboard.writeText(text);
 }
+
+
+export async function readClipboard(): Promise<string> {
+    try {
+        if (typeof DiscordNative !== "undefined" && DiscordNative?.clipboard?.read) {
+            return DiscordNative.clipboard.read();
+        }
+        return await navigator.clipboard.readText();
+    } catch {
+        return "";
+    }
+}

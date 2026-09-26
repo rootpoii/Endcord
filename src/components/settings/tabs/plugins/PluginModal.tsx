@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Endcord, a Discord client mod
  * Copyright (c) 2026 Vendicated and contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -13,6 +13,7 @@ import { BaseText } from "@components/BaseText";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { RenderModalProps, User } from "@endcord/discord-types";
 import { debounce } from "@shared/debounce";
+import { Devs } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
 import { proxyLazy } from "@utils/lazy";
 import { Margins } from "@utils/margins";
@@ -70,9 +71,9 @@ export default function PluginModal({ plugin, onRestartNeeded, onClose, transiti
     const hasSettings = hasAnyVisibleSettings(plugin);
 
     const customAuthors = useMemo(() => [
-        { name: "ewlle", id: 892408159526858753n },
-        { name: "rootpoi", id: 1505905479413530795n },
-        { name: "kraethis", id: 904384828143706164n }
+        Devs.ewlle,
+        Devs.rootpoi,
+        Devs.kraethis
     ], []);
 
     // avoid layout shift by showing dummy users while loading users

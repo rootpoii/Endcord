@@ -78,8 +78,8 @@ export function getCurrentGuild(): Guild | undefined {
     return GuildStore.getGuild(getCurrentChannel()?.guild_id!);
 }
 
-export function openPrivateChannel(userId: string) {
-    ChannelActionCreators.openPrivateChannel(userId);
+export function openPrivateChannel(userId: string, navigateToChannel = true) {
+    return ChannelActionCreators.openPrivateChannel({ recipientIds: [userId], navigateToChannel });
 }
 
 export const enum Theme {
@@ -111,7 +111,7 @@ export async function copyWithToast(text: string, toastMessage = "Copied to clip
     });
 }
 
-interface MessageOptions {
+export interface MessageOptions {
     messageReference: Message["messageReference"];
     allowedMentions: {
         parse: string[];
@@ -224,7 +224,7 @@ export function getUniqueUsername(user: User) {
 }
 
 // Discord has a similar function in their code
-export function getGuildAcronym(guild: Guild): string {
+export function getGuildAcronym(guild: Pick<Guild, "name">): string {
     return guild.name
         .replaceAll("'s ", " ")
         .replace(/\w+/g, m => m[0])

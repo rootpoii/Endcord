@@ -1,0 +1,14 @@
+.vc-keywordnotify-delete {
+    padding: 0;
+    color: var(--primary-400);
+    transition: color 0.2s ease-in-out;
+}
+
+.vc-keywordnotify-delete:hover {
+    color: var(--status-danger);
+}
+
+.vc-keywordnotify-ignoreCaseSwitch {
+    margin-top: 0.5em;
+    margin-right: 40px;
+}

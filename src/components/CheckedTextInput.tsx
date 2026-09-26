@@ -21,13 +21,15 @@ interface TextInputProps {
      * Otherwise, return a string containing the reason for this input being invalid
      */
     validate(v: string): true | string;
+
+    placeholder?: string;
 }
 
 /**
  * A very simple wrapper around Discord's TextInput that validates input and shows
  * the user an error message and only calls your onChange when the input is valid
  */
-export function CheckedTextInput({ initialValue, onChange, validate }: TextInputProps) {
+export function CheckedTextInput({ initialValue, onChange, validate, placeholder }: TextInputProps) {
     const [value, setValue] = useState(initialValue);
     const [error, setError] = useState<string>();
 
@@ -50,6 +52,7 @@ export function CheckedTextInput({ initialValue, onChange, validate }: TextInput
                 type="text"
                 value={value}
                 onChange={handleChange}
+                placeholder={placeholder}
                 error={error}
             />
         </>

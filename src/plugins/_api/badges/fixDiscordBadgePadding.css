@@ -15,3 +15,27 @@ div[class*="badgeList"] img {
     background-color: transparent !important;
     box-shadow: none !important;
 }
+
+/* Remove black background and normalize gifting badges */
+img[src*="gift_patron"],
+img[src*="gift_champion"],
+img[src*="gift_luminary"],
+img[src*="gift_icon"],
+img[src*="gift_hero"],
+img[src*="gift_legendary"],
+img[src*="tI4GCxR"],
+img[src*="Jynm4dV"],
+img[src*="3GRyXIR"],
+img[src*="chM1tvZ"],
+img[src*="7bJJJWl"],
+img[src*="gQg96nV"] {
+    background: transparent !important;
+    background-color: transparent !important;
+    mix-blend-mode: screen !important;
+}
+
+img[src*="gift_luminary"],
+img[src*="3GRyXIR"] {
+    transform: scale(1.18) !important;
+    transform-origin: center center !important;
+}

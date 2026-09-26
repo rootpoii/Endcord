@@ -65,6 +65,8 @@ export interface TooltipProps {
 
     tooltipClassName?: string;
     tooltipContentClassName?: string;
+
+    delay?: number;
 }
 
 export type Tooltip = ComponentType<TooltipProps> & {
@@ -540,4 +542,18 @@ export type ColorPicker = ComponentType<{
     suggestedColors?: string[];
     label?: ReactNode;
     onChange(value: number | null): void;
+    disabled?: boolean;
 }>;
+
+export type RoleMemberPopout = ComponentType<{
+    popoutProps: PopoutProps;
+    guildId: string;
+    channelId: string;
+    roleId: string;
+}>;
+
+export type ComponentSection = ComponentType<PropsWithChildren<{
+    heading?: string;
+    disabled?: boolean;
+    showNitroIcon?: boolean;
+}>>;

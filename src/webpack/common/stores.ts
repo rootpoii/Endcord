@@ -144,3 +144,45 @@ waitForStore("ThemeStore", m => {
     // For this reason, use a non import access here.
     Endcord.Api.Themes.initQuickCssThemeStore(m);
 });
+
+export let SortedGuildStore: t.SortedGuildStore;
+
+export let JoinedThreadsStore: t.JoinedThreadsStore;
+
+export let SafetyHubStore: t.SafetyHubStore;
+
+export let PrivateChannelSortStore: t.PrivateChannelSortStore;
+
+export let ApplicationStreamingSettingsStore: t.ApplicationStreamingSettingsStore;
+
+export let ChannelSectionStore: t.ChannelSectionStore;
+
+export let ExpandedGuildFolderStore: t.ExpandedGuildFolderStore;
+
+export let AuthSessionsStore: t.AuthSessionsStore;
+
+export let ClientThemesBackgroundStore: t.ClientThemesBackgroundStore;
+
+export let ConnectedAccountsStore: t.ConnectedAccountsStore;
+
+export let ChannelMemberStore: t.ChannelMemberStore;
+
+export let ThreadMemberListStore: t.ThreadMemberListStore;
+
+export let CollapsedVoiceChannelStore: t.CollapsedVoiceChannelStore;
+
+export let ReferencedMessageStore: t.ReferencedMessageStore;
+
+export let SessionsStore: t.SessionsStore;
+
+export let GuildAvailabilityStore: t.GuildAvailabilityStore;
+
+export let UserGuildJoinRequestStore: t.UserGuildJoinRequestStore;
+
+export let BasicGuildStore: t.BasicGuildStore;
+
+export let GuildProfileStore: t.GuildProfileStore;
+
+/**
+ * @see jsdoc of {@link t.useStateFromStores}
+ */

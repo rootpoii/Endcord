@@ -16,7 +16,7 @@ import gitRemote from "~git-remote";
 
 import { ENDCORD_FILES,serializeErrors } from "./common";
 
-const API_BASE = "https://api.github.com/repos/plaiboiewlle/endcord-api";
+const API_BASE = "https://api.github.com/repos/rootpoii/endcord";
 let PendingUpdates = [] as [string, string][];
 
 async function githubGet<T = any>(endpoint: string) {
@@ -55,7 +55,7 @@ async function calculateGitChanges() {
 async function fetchUpdates() {
     try {
         const cacheBust = `?t=${Date.now()}`;
-        const apiData = await fetchJson<any>(`https://raw.githubusercontent.com/plaiboiewlle/endcord-api/main/version.json${cacheBust}`);
+        const apiData = await fetchJson<any>(`https://raw.githubusercontent.com/rootpoii/endcord/main/version.json${cacheBust}`);
         if (apiData && apiData.assets && Array.isArray(apiData.assets) && apiData.assets.length > 0) {
             const remoteTs = Number(apiData.updatedAt || 0);
             const localTs = typeof BUILD_TIMESTAMP === "number" ? BUILD_TIMESTAMP : 0;
@@ -85,7 +85,7 @@ async function applyUpdates() {
     return true;
 }
 
-ipcMain.handle(IpcEvents.GET_REPO, serializeErrors(() => "https://github.com/plaiboiewlle/endcord-api"));
+ipcMain.handle(IpcEvents.GET_REPO, serializeErrors(() => "https://github.com/rootpoii/endcord"));
 ipcMain.handle(IpcEvents.GET_UPDATES, serializeErrors(calculateGitChanges));
 ipcMain.handle(IpcEvents.UPDATE, serializeErrors(fetchUpdates));
 ipcMain.handle(IpcEvents.BUILD, serializeErrors(applyUpdates));

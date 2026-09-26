@@ -323,6 +323,7 @@ export interface PluginSettingCustomDef {
     type: OptionType.CUSTOM;
     default?: any;
     onChange?: PluginSettingDefCommon["onChange"];
+    restartNeeded?: boolean;
 }
 
 export interface PluginSettingSliderDef extends PluginSettingDefCommon {

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import type { Channel, CustomEmoji, Message } from "@endcord/discord-types";
+import type { Channel, CloudUpload, CustomEmoji, Message } from "@endcord/discord-types";
 import { Logger } from "@utils/Logger";
 import { MessageStore } from "@webpack/common";
 import type { Promisable } from "type-fest";
@@ -18,7 +18,21 @@ export interface MessageObject {
     tts: boolean;
 }
 
-export interface SendMessageOptions {
+export interface MessageContentOptions {
+    content?: string;
+    channelId?: string;
+    command?: unknown | null;
+    isGif?: boolean;
+    stickers?: string[];
+    uploads?: CloudUpload[];
+    alsoForwardToChannelId?: string;
+
+    // If you end up using these, update their type
+    scheduledTimestamp?: unknown;
+    mediaMention?: unknown;
+}
+
+export interface SendMessageOptions extends MessageContentOptions {
     messageReference?: Message["messageReference"];
     allowedMentions?: {
         parse: string[];
@@ -26,11 +40,6 @@ export interface SendMessageOptions {
     };
     location: string;
     stickerIds?: string[];
-    alsoForwardToChannelId?: string;
-
-    // If you end up using these, update their type
-    scheduledTimestamp?: unknown;
-    mediaMention?: unknown;
 }
 
 export interface SendMessageProps {

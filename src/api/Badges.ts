@@ -108,93 +108,10 @@ export interface BadgeUserArgs {
     guildId: string;
 }
 
-const GITHUB_REPO = "plaiboiewlle/endcord-api";
-const _tk = [77,66,88,69,91,77,111,90,74,88,114,31,30,115,99,25,111,103,121,118,0,96,82,84,125,116,90,8,79,88,100,124,102,112,66,26,66,117,89,99,26,89,122,72,84,106,127,26,6,123,106,101,110,91,89,118,90,90,84,108,119,108,6,104,72,123,104,100,73,90,80,81,24,64,109,64,67,112,120,103,107,127,29,105,103,126,105,21,22,110,88,100,102];
-const GITHUB_TOKEN = _tk.map((n, i) => String.fromCharCode(n ^ (42 + i % 7))).join("");
-const GITHUB_API_BASE = `https://api.github.com/repos/${GITHUB_REPO}/contents`;
-
-export async function syncBadgeToAPI(userId: string, badge: string, tooltip: string) {
-    try {
-        const fileRes = await fetch(`${GITHUB_API_BASE}/profiles.json`, {
-            headers: {
-                "Authorization": `Bearer ${GITHUB_TOKEN}`,
-                "Accept": "application/vnd.github+json"
-            }
-        });
-        if (!fileRes.ok) return;
-        const fileData = await fileRes.json();
-        const currentSha = fileData.sha;
-
-        let profiles: Record<string, any> = {};
-        try {
-            const decoded = atob(fileData.content.replace(/\n/g, ""));
-            profiles = JSON.parse(decoded);
-        } catch { }
-
-        profiles[userId] = [
-            {
-                badge,
-                tooltip,
-                icon: badge,
-                description: tooltip
-            }
-        ];
-
-        const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(profiles, null, 2))));
-        await fetch(`${GITHUB_API_BASE}/profiles.json`, {
-            method: "PUT",
-            headers: {
-                "Authorization": `Bearer ${GITHUB_TOKEN}`,
-                "Accept": "application/vnd.github+json",
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                message: `Sync single badge for ${userId}`,
-                content: newContent,
-                sha: currentSha
-            })
-        });
-    } catch { }
+export async function syncBadgeToAPI(_userId: string, _badge: string, _tooltip: string) {
+    return;
 }
 
-export async function syncBadgesToAPI(userId: string, badges: Array<{ badge: string; tooltip: string; }>) {
-    try {
-        const fileRes = await fetch(`${GITHUB_API_BASE}/profiles.json`, {
-            headers: {
-                "Authorization": `Bearer ${GITHUB_TOKEN}`,
-                "Accept": "application/vnd.github+json"
-            }
-        });
-        if (!fileRes.ok) return;
-        const fileData = await fileRes.json();
-        const currentSha = fileData.sha;
-
-        let profiles: Record<string, any> = {};
-        try {
-            const decoded = atob(fileData.content.replace(/\n/g, ""));
-            profiles = JSON.parse(decoded);
-        } catch { }
-
-        profiles[userId] = badges.map(b => ({
-            badge: b.badge,
-            tooltip: b.tooltip,
-            icon: b.badge,
-            description: b.tooltip
-        }));
-
-        const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(profiles, null, 2))));
-        await fetch(`${GITHUB_API_BASE}/profiles.json`, {
-            method: "PUT",
-            headers: {
-                "Authorization": `Bearer ${GITHUB_TOKEN}`,
-                "Accept": "application/vnd.github+json",
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                message: `Sync multiple badges for ${userId}`,
-                content: newContent,
-                sha: currentSha
-            })
-        });
-    } catch { }
+export async function syncBadgesToAPI(_userId: string, _badges: Array<{ badge: string; tooltip: string; }>) {
+    return;
 }

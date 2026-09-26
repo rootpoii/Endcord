@@ -1,79 +1,63 @@
-<div align="center">
+# Endcord
 
-# EndCord
+Endcord is a desktop client mod for Discord. It loads with the official app and adds plugins, themes, and a settings panel inside Discord.
 
-**A modern, lightweight, and customizable Discord client.**
+[Website](https://endcord.com) · [Download](https://endcord.com/download) · [Discord](https://discord.gg/VC6zmXzq34)
 
-Enhance your Discord experience with powerful plugins, themes, and privacy-focused features.
+## Install
 
-[Website](https://endcord.com/) •
-[Download](https://endcord.com/) •
-[Discord Server](https://discord.gg/VC6zmXzq34)
+Close Discord completely before installing, then open it again when the installer finishes.
 
-</div>
+### Windows
 
----
+Windows 10 and 11. Stable, PTB, and Canary.
 
-## ✨ Features
+1. Download [EndcordInstaller.exe](https://endcord.com/EndcordInstaller.exe).
+2. If the browser blocks the file, use [EndcordInstaller.zip](https://endcord.com/EndcordInstaller.zip) instead. It contains the same installer.
+3. Run the installer and start Discord.
 
-* 🚀 Easy installation
-* 🧩 **200+ built-in plugins**
-* ⚡ Lightweight and optimized
-* 🌐 Browser support via Extension or UserScript
-* 💻 Supports every Discord branch
+### Linux
 
-  * Stable
-  * Canary
-  * PTB
-* 🎨 Built-in CSS editor
-* 🎭 Compatible with BetterDiscord themes
-* 🔒 Privacy-first
+Official Discord `.deb`, `.tar.gz`, or Flatpak. Snap is not supported.
 
-  * Blocks Discord analytics
-  * Disables crash reporting
-  * No telemetry
-* 🔄 Optional settings synchronization
-* 🔧 Actively maintained with frequent updates
+```sh
+sh -c "$(curl -sS https://endcord.com/install.sh)"
+```
 
----
+Or download [EndcordInstallerCli-linux](https://endcord.com/EndcordInstallerCli-linux) and run it yourself:
 
-## 📦 Installation
+```sh
+chmod +x EndcordInstallerCli-linux && ./EndcordInstallerCli-linux
+```
 
-1. Visit **https://endcord.com/**
-2. Download the installer for your platform.
-3. Run the installer.
-4. Launch Discord and enjoy EndCord.
+## Uninstall
 
----
+On Windows, open the installer again and restore the vanilla client.
 
-## 🗑️ Uninstall
+On Linux, run the installer again and choose **Uninstall Endcord**.
 
-Open the installer again or follow the uninstall instructions available on the website.
+## Build
 
----
+Node.js 22 or newer, and [pnpm](https://pnpm.io).
 
-## 💬 Community
+```sh
+git clone https://github.com/rootpoii/endcord.git
+cd endcord
+pnpm install
+pnpm build
+pnpm inject
+```
 
-Need help or want to report a bug?
+`pnpm uninject` removes the local install. `pnpm watch` rebuilds while you edit.
 
-Join our Discord server:
+## Plugins
 
-**https://discord.gg/VC6zmXzq34**
+Endcord ships with 367 built-in plugins. Turn them on from the Endcord settings tab inside Discord.
 
----
-
-## ❤️ Why EndCord?
-
-* Huge plugin ecosystem
-* Lightweight performance
-* Modern interface
-* Extensive customization
-* Browser support
-* Privacy-focused
-* Open community
-
----
+Plugin ideas and fixes go through pull requests. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening one.
 
 ## License
 
-See the LICENSE file for more information.
+[GPL-3.0-or-later](LICENSE). Copyright © Vendicated and contributors.
+
+Endcord is not affiliated with Discord Inc.

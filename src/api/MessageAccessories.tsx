@@ -35,6 +35,8 @@ export function _modifyAccessories(
     elements: JSX.Element[],
     props: Record<string, any>
 ) {
+    if (accessories.size === 0) return elements;
+
     try {
         for (const [key, accessory] of accessories.entries()) {
             const res = (
