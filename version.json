@@ -1,0 +1,24 @@
+{
+  "version": "4.0.20",
+  "hash": "4.0.20",
+  "updatedAt": 1790501148392,
+  "downloadUrl": "https://endcord.com/download",
+  "assets": [
+    {
+      "name": "patcher.js",
+      "url": "https://endcord.com/dist/patcher.js?v=4.0.20"
+    },
+    {
+      "name": "preload.js",
+      "url": "https://endcord.com/dist/preload.js?v=4.0.20"
+    },
+    {
+      "name": "renderer.js",
+      "url": "https://endcord.com/dist/renderer.js?v=4.0.20"
+    },
+    {
+      "name": "renderer.css",
+      "url": "https://endcord.com/dist/renderer.css?v=4.0.20"
+    }
+  ]
+}

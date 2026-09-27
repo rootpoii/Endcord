@@ -22,7 +22,7 @@ function emitProfile(userId: string, prof: any) {
 
 const fetchedAt = new Map<string, number>();
 
-// One shared list every 10s. Not one request per visible user.
+// One shared list per open window. 10s polling burned the 5M daily cap in about two hours.
 
 export function markProfileFresh(userId: string) {
     if (userId) fetchedAt.set(userId, Date.now());
@@ -38,22 +38,35 @@ export function queueEndcordProfile(_userId: string) {
     // Profiles come from the shared directory fetch. Do not request each user.
 }
 
-const DIRECTORY_MS = 10 * 1000;
+const DIRECTORY_MS = 5 * 60 * 1000;
+const BACKOFF_MS = 30 * 60 * 1000;
 let allInflight: Promise<Record<string, any> | null> | null = null;
 let directoryCache: Record<string, any> | null = null;
 let directoryNextAt = 0;
 
+function windowHidden() {
+    return typeof document !== "undefined" && document.hidden;
+}
+
 export async function fetchAllEndcordProfiles(): Promise<Record<string, any> | null> {
     if (allInflight) return allInflight;
     if (Date.now() < directoryNextAt) return directoryCache;
+    // A minimized client must not spend the daily quota.
+    if (windowHidden()) return directoryCache;
 
     directoryNextAt = Date.now() + DIRECTORY_MS;
     allInflight = (async () => {
         try {
             const res = await fetch(`${ENDCORD_API}/profiles`);
-            if (!res.ok) return directoryCache;
+            if (!res.ok) {
+                directoryNextAt = Date.now() + (res.status === 429 || res.status === 503 ? BACKOFF_MS : 15 * 60 * 1000);
+                return directoryCache;
+            }
             const allProfiles = await res.json();
-            if (!allProfiles || typeof allProfiles !== "object" || Array.isArray(allProfiles)) return directoryCache;
+            if (!allProfiles || typeof allProfiles !== "object" || Array.isArray(allProfiles)) {
+                directoryNextAt = Date.now() + 15 * 60 * 1000;
+                return directoryCache;
+            }
             const now = Date.now();
             for (const [uid, prof] of Object.entries(allProfiles)) {
                 fetchedAt.set(uid, now);
@@ -62,6 +75,7 @@ export async function fetchAllEndcordProfiles(): Promise<Record<string, any> | n
             directoryCache = allProfiles;
             return allProfiles;
         } catch {
+            directoryNextAt = Date.now() + 15 * 60 * 1000;
             return directoryCache;
         }
     })().finally(() => {
@@ -69,4 +83,10 @@ export async function fetchAllEndcordProfiles(): Promise<Record<string, any> | n
     });
 
     return allInflight;
+}
+
+if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) void fetchAllEndcordProfiles();
+    });
 }

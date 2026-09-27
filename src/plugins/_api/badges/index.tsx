@@ -130,7 +130,7 @@ export default definePlugin({
         await loadBadges();
 
         clearInterval(intervalId);
-        intervalId = setInterval(loadBadges, 10_000);
+        intervalId = setInterval(loadBadges, 5 * 60 * 1000);
     },
 
     async stop() {

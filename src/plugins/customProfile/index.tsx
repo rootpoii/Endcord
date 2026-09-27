@@ -2055,7 +2055,7 @@ export default definePlugin({
 
         fetchAllProfilesFromAPI(true);
         if (_profilePoll) clearInterval(_profilePoll);
-        _profilePoll = setInterval(() => fetchAllProfilesFromAPI(true), 10_000);
+        _profilePoll = setInterval(() => fetchAllProfilesFromAPI(false), 5 * 60 * 1000);
 
         try {
             if (!this._origXhrOpen) {
